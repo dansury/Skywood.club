@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Skywood — гамаки-палатки и подвесные палатки. Спать среди деревьев</title>
+<meta name="description" content="Skywood — подвесные палатки и гамаки-палатки для комфортного сна на природе. Москитная сетка, водонепроницаемый тент, надувной матрас. Доставка СДЭК по России, оплата картой Т-Банк или при получении.">
+<meta property="og:title" content="Skywood — спать среди деревьев">
+<meta property="og:description" content="Подвесные палатки и гамаки-палатки. Доставка СДЭК, оплата при получении.">
+<meta property="og:image" content="/assets/img/jet-1.jpg">
+<meta name="theme-color" content="#0e1712">
+<link rel="icon" href="/assets/img/logo-round.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+
+<!-- ───────────────── ШАПКА ───────────────── -->
+<header class="header" id="header">
+  <div class="container header__inner">
+    <a href="#" class="header__logo" aria-label="Skywood">
+      <img src="/assets/img/logo-white.png" alt="Skywood">
+    </a>
+    <nav class="nav" id="nav">
+      <a href="#products">Палатки</a>
+      <a href="#why">Преимущества</a>
+      <a href="#how">Доставка</a>
+      <a href="#reviews">Отзывы</a>
+      <a href="#faq">Вопросы</a>
+    </nav>
+    <div class="header__actions">
+      <a href="tel:+79775084585" class="header__phone">+7 977 508-45-85</a>
+      <button class="cart-btn" id="cartBtn" aria-label="Корзина">
+        <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6h15l-1.5 9h-12L6 6Zm0 0-.7-3H2m6 18a1 1 0 1 0 0-2 1 1 0 0 0 0 2Zm10 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="cart-btn__count" id="cartCount">0</span>
+      </button>
+      <button class="burger" id="burger" aria-label="Меню"><span></span><span></span><span></span></button>
+    </div>
+  </div>
+</header>
+
+<!-- ───────────────── HERO ───────────────── -->
+<section class="hero" id="hero">
+  <video class="hero__video" autoplay muted loop playsinline preload="auto" poster="/assets/img/jet-1.jpg">
+    <source src="/assets/video/hero.mp4" type="video/mp4">
+  </video>
+  <div class="hero__veil"></div>
+  <div class="container hero__content" data-parallax="0.25">
+    <p class="hero__eyebrow">Подвесные палатки и гамаки-палатки</p>
+    <h1 class="hero__title">Спать <span>среди деревьев</span></h1>
+    <p class="hero__lead">Никакой сырости, корней под спиной и ночных гостей. Только воздух, лес и вы — в палатке, которая висит между деревьев.</p>
+    <div class="hero__cta">
+      <a href="#products" class="btn btn--primary btn--lg">Выбрать палатку</a>
+      <a href="#how" class="btn btn--ghost btn--lg">Как это работает</a>
+    </div>
+    <ul class="hero__facts">
+      <li><strong>до 250 кг</strong><span>выдерживает</span></li>
+      <li><strong>2 минуты</strong><span>на установку</span></li>
+      <li><strong>СДЭК</strong><span>по всей России</span></li>
+    </ul>
+  </div>
+  <a href="#products" class="hero__scroll" aria-label="Вниз"><span></span></a>
+</section>
+
+<!-- ───────────────── БЕГУЩАЯ СТРОКА ───────────────── -->
+<div class="marquee" aria-hidden="true">
+  <div class="marquee__track">
+    <span>Москитная сетка</span><i>✦</i><span>Водонепроницаемый тент</span><i>✦</i>
+    <span>Надувной матрас</span><i>✦</i><span>Оплата при получении</span><i>✦</i>
+    <span>Доставка СДЭК</span><i>✦</i><span>Установка на 2 деревьях</span><i>✦</i>
+    <span>Москитная сетка</span><i>✦</i><span>Водонепроницаемый тент</span><i>✦</i>
+    <span>Надувной матрас</span><i>✦</i><span>Оплата при получении</span><i>✦</i>
+    <span>Доставка СДЭК</span><i>✦</i><span>Установка на 2 деревьях</span><i>✦</i>
+  </div>
+</div>
+
+<!-- ───────────────── ТОВАРЫ ───────────────── -->
+<section class="section" id="products">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">Каталог</p>
+      <h2 class="section__title">Две палатки — два сценария отдыха</h2>
+      <p class="section__sub">Лёгкий гамак-палатка для соло-походов и просторная двухместная Jet. Обе — для тех, кто ценит сухой и спокойный сон.</p>
+    </div>
+    <div class="products" id="productGrid"><!-- рендерится из /api/products --></div>
+  </div>
+</section>
+
+<!-- ───────────────── ПАРАЛЛАКС-БЛОК ───────────────── -->
+<section class="parallax" id="parallax1">
+  <div class="parallax__bg" style="background-image:url('/assets/img/atmosphere.jpg')"></div>
+  <div class="parallax__veil"></div>
+  <div class="container parallax__content reveal">
+    <h2>Земля остаётся внизу.<br>Вместе с сыростью, камнями и насекомыми.</h2>
+    <p>Подвесная палатка превращает любые два-три дерева в готовую спальню. Там, где обычную палатку поставить негде — заповедник, склон, болотистый берег — Skywood висит в воздухе.</p>
+  </div>
+</section>
+
+<!-- ───────────────── ПРЕИМУЩЕСТВА ───────────────── -->
+<section class="section section--tint" id="why">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">Почему Skywood</p>
+      <h2 class="section__title">Сон, ради которого едут в лес</h2>
+    </div>
+    <div class="why-grid">
+      <article class="why-card reveal">
+        <div class="why-card__icon">☂</div>
+        <h3>Сухо в любой дождь</h3>
+        <p>Просиликоненный водонепроницаемый тент защищает от ливня и солнца, не превращаясь в парник.</p>
+      </article>
+      <article class="why-card reveal">
+        <div class="why-card__icon">🦟</div>
+        <h3>Ноль насекомых</h3>
+        <p>Прочная антимоскитная сетка по всему периметру — на неё можно спокойно ложиться спиной.</p>
+      </article>
+      <article class="why-card reveal">
+        <div class="why-card__icon">☁</div>
+        <h3>Тепло и мягко</h3>
+        <p>Надувной матрас с ножным насосом держит форму и сохраняет тепло. Спине комфортно всю ночь.</p>
+      </article>
+      <article class="why-card reveal">
+        <div class="why-card__icon">⚖</div>
+        <h3>Держит до 250 кг</h3>
+        <p>Прочные стропы и алюминиевая дуга. Можно спать вдвоём и не бояться перевернуться.</p>
+      </article>
+      <article class="why-card reveal">
+        <div class="why-card__icon">🎒</div>
+        <h3>Лёгкая в рюкзаке</h3>
+        <p>От 2,4 кг и компактные 50×20×20 см в сложенном виде — помещается даже в небольшой рюкзак.</p>
+      </article>
+      <article class="why-card reveal">
+        <div class="why-card__icon">🌲</div>
+        <h3>Ставится за пару минут</h3>
+        <p>Достаточно двух деревьев. Нет деревьев — подойдут и трекинговые палки.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── СРАВНЕНИЕ ───────────────── -->
+<section class="section" id="compare">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">Честное сравнение</p>
+      <h2 class="section__title">Гамак-палатка против обычной палатки</h2>
+    </div>
+    <div class="compare reveal">
+      <div class="compare__col compare__col--bad">
+        <h3>Обычная палатка</h3>
+        <ul>
+          <li>Нужно искать сухое и ровное место</li>
+          <li>Корни и камни под спиной</li>
+          <li>Сырость и конденсат с земли</li>
+          <li>Ползучие гости заходят без спроса</li>
+          <li>В заповедных зонах часто запрещена</li>
+        </ul>
+      </div>
+      <div class="compare__col compare__col--good">
+        <h3>Skywood</h3>
+        <ul>
+          <li>Достаточно двух деревьев или трекинговых палок</li>
+          <li>Ровное надувное спальное место</li>
+          <li>Вы над землёй — сухо и тепло</li>
+          <li>Сетка по всему периметру</li>
+          <li>Можно ставить там, где палатки запрещены</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── КАК ЭТО РАБОТАЕТ / ДОСТАВКА ───────────────── -->
+<section class="section section--tint" id="how">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">Заказ и доставка</p>
+      <h2 class="section__title">От корзины до леса — четыре шага</h2>
+    </div>
+    <div class="steps">
+      <div class="step reveal"><span class="step__num">1</span><h3>Выбираете палатку</h3><p>Гамак-палатку или двухместную Jet. Указываете цвет и количество.</p></div>
+      <div class="step reveal"><span class="step__num">2</span><h3>Оформляете заказ</h3><p>Город и пункт выдачи СДЭК подскажет форма. Стоимость доставки считается сразу.</p></div>
+      <div class="step reveal"><span class="step__num">3</span><h3>Доставка СДЭК</h3><p>Отправляем со склада СДЭК по всей России — в пункт выдачи или курьером до двери.</p></div>
+      <div class="step reveal"><span class="step__num">4</span><h3>Оплата</h3><p>Картой онлайн через Т-Банк или при получении — наложенным платежом СДЭК.</p></div>
+    </div>
+    <div class="pay-note reveal">
+      <div class="pay-note__item"><strong>Оплата картой онлайн</strong><span>Безопасный платёж через Т-Банк. Заказ уходит сразу после оплаты.</span></div>
+      <div class="pay-note__item"><strong>Оплата при получении</strong><span>Наложенный платёж СДЭК — платите в пункте выдачи или курьеру, когда получаете палатку.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── ОТЗЫВЫ ───────────────── -->
+<section class="section" id="reviews">
+  <div class="container">
+    <div class="section__head reveal">
+      <p class="eyebrow">Отзывы</p>
+      <h2 class="section__title">Что говорят те, кто уже спал в Skywood</h2>
+    </div>
+    <div class="reviews">
+      <article class="review reveal">
+        <div class="review__stars">★★★★★</div>
+        <p>«Первая ночь в гамаке-палатке — и больше не хочу спать на земле. Реально сухо, спина не затекает, матрас держит форму».</p>
+        <footer>Андрей, поход по Карелии</footer>
+      </article>
+      <article class="review reveal">
+        <div class="review__stars">★★★★★</div>
+        <p>«Брали Jet вдвоём. Шов по центру не даёт скатываться, поставили за пару минут между трёх сосен. Дождь ночью — внутри сухо».</p>
+        <footer>Марина и Игорь, Подмосковье</footer>
+      </article>
+      <article class="review reveal">
+        <div class="review__stars">★★★★★</div>
+        <p>«Самое ценное — комары остаются снаружи. Сетка прочная, лежал на ней спиной без опаски. Вес адекватный для рюкзака».</p>
+        <footer>Дмитрий, Урал</footer>
+      </article>
+    </div>
+    <div class="reviews__cta reveal">
+      <a href="https://www.avito.ru/" target="_blank" rel="noopener" class="btn btn--ghost">Отзывы на Авито</a>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── FAQ ───────────────── -->
+<section class="section section--tint" id="faq">
+  <div class="container container--narrow">
+    <div class="section__head reveal">
+      <p class="eyebrow">Вопросы</p>
+      <h2 class="section__title">Коротко о главном</h2>
+    </div>
+    <div class="faq" id="faq-list">
+      <details class="faq__item reveal"><summary>А если рядом нет подходящих деревьев?</summary><p>Гамак-палатку можно установить на трекинговые палки. Для Jet нужны два-три дерева на удобном расстоянии — обычно их найти несложно.</p></details>
+      <details class="faq__item reveal"><summary>Не холодно ли спать в воздухе?</summary><p>Надувной матрас отсекает от холодного воздуха снизу и сохраняет тепло. Дополнительно под низ можно положить затухающую надью.</p></details>
+      <details class="faq__item reveal"><summary>Как происходит доставка?</summary><p>Отправляем со склада СДЭК по всей России. При оформлении вы выбираете пункт выдачи или курьерскую доставку до двери, стоимость считается автоматически.</p></details>
+      <details class="faq__item reveal"><summary>Можно оплатить при получении?</summary><p>Да. Выберите способ «Оплата при получении» — это наложенный платёж СДЭК. Вы оплачиваете заказ в пункте выдачи или курьеру при получении.</p></details>
+      <details class="faq__item reveal"><summary>Какой вес выдерживает палатка?</summary><p>Гамак-палатка — до 200 кг, подвесная палатка Jet — до 250 кг.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── ФИНАЛЬНЫЙ CTA ───────────────── -->
+<section class="finale" id="order">
+  <div class="finale__bg" style="background-image:url('/assets/img/hammock-1.jpg')"></div>
+  <div class="finale__veil"></div>
+  <div class="container finale__content reveal">
+    <h2>Лес уже ждёт.<br>Осталось выбрать палатку.</h2>
+    <p>Доставим со склада СДЭК в ваш город. Оплата картой или при получении.</p>
+    <a href="#products" class="btn btn--primary btn--lg">Перейти к выбору</a>
+  </div>
+</section>
+
+<!-- ───────────────── ФУТЕР ───────────────── -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <img src="/assets/img/logo-white.png" alt="Skywood">
+      <p>Подвесные палатки и гамаки-палатки для комфортного сна на природе.</p>
+    </div>
+    <div class="footer__col">
+      <h4>Связь</h4>
+      <a href="tel:+79775084585">+7 977 508-45-85</a>
+      <a href="https://wa.me/79775084585" target="_blank" rel="noopener">WhatsApp</a>
+      <a href="https://t.me/skywood_club" target="_blank" rel="noopener">Telegram</a>
+    </div>
+    <div class="footer__col">
+      <h4>Каталог</h4>
+      <a href="#products">Гамак-палатка Skywood</a>
+      <a href="#products">Подвесная палатка Jet</a>
+      <a href="#how">Доставка и оплата</a>
+    </div>
+    <div class="footer__col footer__legal" id="footerLegal">
+      <h4>Реквизиты</h4>
+    </div>
+  </div>
+  <div class="container footer__bottom">
+    <span>© <span id="year"></span> Skywood. Гамаки-палатки и подвесные палатки.</span>
+  </div>
+</footer>
+
+<!-- ───────────────── КОРЗИНА ───────────────── -->
+<div class="drawer-overlay" id="overlay"></div>
+<aside class="cart" id="cart" aria-hidden="true">
+  <div class="cart__head">
+    <h3>Корзина</h3>
+    <button class="icon-btn" id="cartClose" aria-label="Закрыть">✕</button>
+  </div>
+  <div class="cart__body" id="cartItems"></div>
+  <div class="cart__foot">
+    <div class="cart__total"><span>Итого</span><strong id="cartTotal">0 ₽</strong></div>
+    <button class="btn btn--primary btn--block" id="checkoutBtn">Оформить заказ</button>
+  </div>
+</aside>
+
+<!-- ───────────────── МОДАЛКА ТОВАРА ───────────────── -->
+<div class="modal" id="productModal" aria-hidden="true">
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box modal__box--wide" id="productModalBox"></div>
+</div>
+
+<!-- ───────────────── МОДАЛКА ОФОРМЛЕНИЯ ───────────────── -->
+<div class="modal" id="checkoutModal" aria-hidden="true">
+  <div class="modal__backdrop" data-close></div>
+  <div class="modal__box" id="checkoutBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/js/store.js" defer></script>
+<script src="/js/main.js" defer></script>
+</body>
+</html>
