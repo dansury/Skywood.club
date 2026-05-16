@@ -1,9 +1,7 @@
-node_modules/
 .env
 .env.local
-public/data/orders.json
-public/data/.cdek-token.json
-public/data/.installed
-npm-debug.log*
+data/orders.json
+data/.cdek-token.json
+data/.installed
 *.log
 .DS_Store

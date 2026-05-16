@@ -5,7 +5,7 @@
 return [
     'repo'       => 'dansury/skywood.club',
     'branch'     => 'main',
-    'subdir'     => 'public',
+    'subdir'     => '',
     'secret'     => '',
     'gh_token'   => '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',
     'keep_files' => ['pull.php', 'pull-config.php'],
