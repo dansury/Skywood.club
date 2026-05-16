@@ -1,6 +1,11 @@
 # spec/integrations.md
 
-## Tinkoff — src/services/tinkoff.js
+Each integration has two implementations with identical behaviour: Node
+(`src/services/*.js`) and PHP (`public/api/lib/*.php`). The descriptions below
+hold for both; PHP function names are prefixed `sw_` (`sw_tinkoff_*`,
+`sw_cdek_*`).
+
+## Tinkoff — src/services/tinkoff.js · public/api/lib/tinkoff.php
 
 Т-Банк EACQ. API base `securepay.tinkoff.ru/v2`.
 
@@ -12,7 +17,7 @@
 
 Webhook → `routes/payment.js`: `Status` `CONFIRMED`/`AUTHORIZED` → order `paid`.
 
-## CDEK — src/services/cdek.js
+## CDEK — src/services/cdek.js · public/api/lib/cdek.php
 
 CDEK API v2. Base `api.cdek.ru/v2` (test: `api.edu.cdek.ru/v2`).
 

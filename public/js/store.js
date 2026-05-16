@@ -31,7 +31,7 @@
   /* ---------- запуск ---------- */
   async function init() {
     try {
-      const data = await fetch('/api/products').then((r) => r.json());
+      const data = await fetch('api/products').then((r) => r.json());
       PRODUCTS = data.products || [];
       COMPANY = data.company || {};
       DEMO = !!data.demo;
@@ -68,7 +68,7 @@
       .map((v) => `<span>${v}</span>`).join('');
     art.innerHTML = `
       <div class="product__media">
-        <img src="/assets/img/${p.images[0]}" alt="${p.name}" loading="lazy">
+        <img src="assets/img/${p.images[0]}" alt="${p.name}" loading="lazy">
         ${p.badge ? `<span class="product__badge ${p.oldPrice ? 'product__badge--sale' : ''}">${p.badge}</span>` : ''}
         ${p.available ? '' : '<div class="product__soldout">Под заказ</div>'}
         <div class="product__dots">${p.images.map((_, i) =>
@@ -112,9 +112,9 @@
       <button class="modal__close" data-close>✕</button>
       <div class="pm">
         <div class="pm__gallery">
-          <div class="pm__main"><img src="/assets/img/${p.images[0]}" alt="${p.name}" id="pmMain"></div>
+          <div class="pm__main"><img src="assets/img/${p.images[0]}" alt="${p.name}" id="pmMain"></div>
           <div class="pm__thumbs">${p.images.map((im, i) =>
-            `<img src="/assets/img/${im}" data-i="${i}" class="${i === 0 ? 'active' : ''}" alt="">`).join('')}</div>
+            `<img src="assets/img/${im}" data-i="${i}" class="${i === 0 ? 'active' : ''}" alt="">`).join('')}</div>
         </div>
         <div class="pm__info">
           <span class="product__cat">${p.category}</span>
@@ -176,7 +176,7 @@
         const row = document.createElement('div');
         row.className = 'cart-item';
         row.innerHTML = `
-          <img class="cart-item__img" src="/assets/img/${l.p.images[0]}" alt="">
+          <img class="cart-item__img" src="assets/img/${l.p.images[0]}" alt="">
           <div>
             <div class="cart-item__name">${l.p.name}</div>
             ${l.color ? `<div class="cart-item__opt">Цвет: ${l.color}</div>` : ''}
@@ -332,7 +332,7 @@
       const q = cityInput.value.trim();
       if (q.length < 2) { list.classList.remove('show'); return; }
       try {
-        const cities = await fetch('/api/cdek/cities?q=' + encodeURIComponent(q)).then((r) => r.json());
+        const cities = await fetch('api/cdek/cities?q=' + encodeURIComponent(q)).then((r) => r.json());
         if (!cities.length) { list.classList.remove('show'); return; }
         list.innerHTML = cities.map((c, i) =>
           `<button data-i="${i}">${c.city}<span style="color:var(--muted)"> — ${c.region || ''}</span></button>`).join('');
@@ -385,7 +385,7 @@
     if (!sel || !ck.city) return;
     sel.innerHTML = '<option value="">Загрузка пунктов…</option>';
     try {
-      ck.points = await fetch('/api/cdek/points?city_code=' + ck.city.code).then((r) => r.json());
+      ck.points = await fetch('api/cdek/points?city_code=' + ck.city.code).then((r) => r.json());
       if (!ck.points.length) { sel.innerHTML = '<option value="">Нет ПВЗ в этом городе</option>'; return; }
       sel.innerHTML = '<option value="">Выберите пункт выдачи</option>' +
         ck.points.map((p) => `<option value="${p.code}">${p.name} — ${p.address || ''}</option>`).join('');
@@ -401,7 +401,7 @@
     ck.delivery = null;
     info.innerHTML = '<div class="hint">Считаем стоимость доставки…</div>';
     try {
-      const r = await fetch('/api/cdek/calculate', {
+      const r = await fetch('api/cdek/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -470,7 +470,7 @@
     const errBox = $('#ckSubmitErr');
     errBox.innerHTML = '';
     try {
-      const res = await fetch('/api/orders', {
+      const res = await fetch('api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
