@@ -7,7 +7,7 @@ return [
     'branch'     => 'main',
     'subdir'     => 'public',
     'secret'     => '',
-    'gh_token'   => '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',
+    'gh_token'   => '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',
     'keep_files' => ['pull.php', 'pull-config.php'],
     'timezone'   => 'Europe/Moscow',
 ];
