@@ -1,7 +1,8 @@
 # Skywood.club — project guide
 
-Selling landing + shop for Skywood hanging tents. Node.js/Express backend,
-static frontend, Tinkoff (Т-Банк) payments, CDEK delivery.
+Selling landing + shop for Skywood hanging tents. Static HTML frontend,
+PHP backend, Tinkoff (Т-Банк) payments, CDEK delivery. Runs on plain
+shared PHP hosting; deployable as files via `pull.php`.
 
 ## Navigation
 
@@ -29,7 +30,7 @@ or version history.
 
 - `spec.md`, `/spec/*.md`, `/changelog/*.md`, `README.md` — in English.
 - No filler in specs: facts only — names, types, values, relations.
-- Don't bloat `src/server.js`. New functionality goes into new files
-  (`src/routes/*`, `src/services/*`); additions go where the feature lives.
+- Don't bloat `api/index.php`. New functionality goes into new files
+  (`api/lib/*`); additions go where the feature lives.
 - Catalog data — `data/products.json`. Secrets — `.env` (never commit).
 - `1/` holds MHT archives of the old WordPress site — reference only.

@@ -1,6 +1,6 @@
 # spec/frontend.md
 
-Статический фронтенд `public/`. Без сборки. Шрифты — Google Fonts (Manrope, Unbounded).
+Статический фронтенд в корне сайта. Без сборки. Шрифты — Google Fonts (Manrope, Unbounded).
 
 ## index.html — лендинг
 

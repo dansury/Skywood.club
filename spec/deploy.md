@@ -4,11 +4,11 @@ How the site reaches the PHP hosting and stays updated.
 
 ## Layout
 
-`public/` is the only deployable folder. Its contents become the web root on
-the hosting (e.g. `https://new.skywood.club/NEW/`). It contains:
+The repository root is the web root on the hosting (e.g.
+`https://new.skywood.club/NEW/`). All asset/API references in the HTML are
+**relative**, so the site works from any subfolder.
 
-- `index.html`, `order.html` — static pages. All asset/API references are
-  **relative**, so the site works from any subfolder.
+- `index.html`, `order.html` — static pages.
 - `css/`, `js/`, `assets/` — static assets.
 - `api/` — PHP backend (`spec/backend.md`).
 - `data/` — `products.json` (catalog) + runtime `orders.json`,
@@ -20,14 +20,17 @@ the hosting (e.g. `https://new.skywood.club/NEW/`). It contains:
 
 ## pull.php — update from GitHub
 
-`pull.php` + `pull-config.php` live in the deployed folder (preserved across
+`pull.php` + `pull-config.php` live in the site folder (preserved across
 pulls). Opening `pull.php` downloads the repo ZIP from GitHub and overwrites the
-folder with `pull-config.php`'s `subdir` (`public`). Files not present in the
-repo (`orders.json`, `.cdek-token.json`, `.installed`) are left untouched.
+folder. Files not present in the repo (`orders.json`, `.cdek-token.json`,
+`.installed`) are left untouched.
 
-`pull-config.php`: `repo`, `branch`, `subdir=public`, `secret` (optional URL
-token), `gh_token` (fine-grained PAT, needs **Contents: Read** + Metadata),
-`keep_files`, `timezone`.
+`pull-config.php`: `repo`, `branch`, `subdir` (empty = repo root), `secret`
+(optional URL token), `gh_token` (fine-grained PAT, needs **Contents: Read** +
+Metadata), `keep_files`, `timezone`.
+
+`pull.php` and `install.php` are PHP 5.6+ compatible so they load even on hosts
+with an outdated PHP; the rest of the API needs PHP 7.x.
 
 ## install.php — first run
 
