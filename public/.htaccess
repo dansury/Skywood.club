@@ -1,0 +1,24 @@
+# Skywood.club — static landing + PHP API.
+# This file is deployed with the site (pull.php) and works in any subfolder.
+
+DirectoryIndex index.html
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Route /api/* to the PHP front controller (everything else served as files).
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^api/.+$ api/index.php [QSA,L]
+</IfModule>
+
+# Never serve credentials, the deploy config, or the API source as plain files.
+<FilesMatch "(^\.env$|^pull-config\.php$|\.(log|md)$)">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order allow,deny
+    Deny from all
+  </IfModule>
+</FilesMatch>

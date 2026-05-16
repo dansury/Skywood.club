@@ -4,10 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Статус заказа — Skywood</title>
-<link rel="icon" href="/assets/img/logo-round.png">
+<link rel="icon" href="assets/img/logo-round.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Unbounded:wght@600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/css/styles.css">
+<link rel="stylesheet" href="css/styles.css">
 <style>
   body{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
   .result{max-width:520px;width:100%;background:var(--bg-2);border:1px solid var(--line);
@@ -23,19 +23,19 @@
 </head>
 <body>
 <div class="result" id="result">
-  <img class="result__logo" src="/assets/img/logo-white.png" alt="Skywood">
+  <img class="result__logo" src="assets/img/logo-white.png" alt="Skywood">
   <div class="result__icon" id="icon">⏳</div>
   <h1 id="title">Проверяем заказ…</h1>
   <div class="result__id" id="orderId"></div>
   <p id="text">Минутку, уточняем статус оплаты.</p>
-  <a href="/" class="btn btn--primary" id="homeBtn">На главную</a>
+  <a href="index.html" class="btn btn--primary" id="homeBtn">На главную</a>
 </div>
 <script>
 (async () => {
   const params = new URLSearchParams(location.search);
   const orderId = params.get('order') || '';
   const demo = params.get('demo') === '1';
-  const fail = location.pathname.includes('/fail');
+  const fail = params.get('status') === 'fail' || location.pathname.includes('/fail');
   const $ = (id) => document.getElementById(id);
   if (orderId) $('orderId').textContent = 'Заказ № ' + orderId;
 
@@ -52,7 +52,7 @@
 
   let order = null;
   if (orderId) {
-    try { order = await fetch('/api/orders/' + encodeURIComponent(orderId)).then((r) => r.ok ? r.json() : null); } catch {}
+    try { order = await fetch('api/orders/' + encodeURIComponent(orderId)).then((r) => r.ok ? r.json() : null); } catch {}
   }
 
   if (demo) {

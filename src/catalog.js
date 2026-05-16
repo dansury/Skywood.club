@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
-const file = join(root, 'data', 'products.json');
+const file = join(root, 'public', 'data', 'products.json');
 
 let products = [];
 

@@ -7,10 +7,23 @@
 // If a SECRET is configured, append ?token=<SECRET>.
 // Append ?plain=1 for unstyled text/plain output (useful for cron / curl).
 
-declare(strict_types=1);
+// Compatible with PHP 5.6+ — intentionally avoids type declarations, the null
+// coalescing operator and array destructuring so it runs on hosts whose PHP
+// version is older than 7.x (otherwise the file fails to parse → HTTP 500).
 
 const CONFIG_FILE = 'pull-config.php';
 const ALWAYS_KEEP = ['pull.php', 'pull-config.php'];
+
+// Random hex token — random_bytes() is PHP 7+, so fall back on older hosts.
+function pull_rand() {
+    if (function_exists('random_bytes')) {
+        return bin2hex(random_bytes(6));
+    }
+    if (function_exists('openssl_random_pseudo_bytes')) {
+        return bin2hex(openssl_random_pseudo_bytes(6));
+    }
+    return substr(md5(uniqid((string) mt_rand(), true)), 0, 12);
+}
 
 $configPath = __DIR__ . '/' . CONFIG_FILE;
 $plain      = isset($_GET['plain']);
@@ -31,7 +44,8 @@ date_default_timezone_set($config['timezone'] ?: 'UTC');
 ignore_user_abort(true);
 @set_time_limit(300);
 
-if ($config['secret'] !== '' && !hash_equals($config['secret'], (string)($_GET['token'] ?? ''))) {
+$reqToken = isset($_GET['token']) ? (string)$_GET['token'] : '';
+if ($config['secret'] !== '' && !hash_equals($config['secret'], $reqToken)) {
     http_response_code(403);
     if ($plain) {
         header('Content-Type: text/plain; charset=utf-8');
@@ -53,7 +67,7 @@ term("================================================");
 term("");
 
 $target = __DIR__;
-$tmp    = sys_get_temp_dir() . '/pull_' . bin2hex(random_bytes(6));
+$tmp    = sys_get_temp_dir() . '/pull_' . pull_rand();
 if (!mkdir($tmp, 0755, true)) {
     http_response_code(500);
     term("error: cannot create temp dir");
@@ -80,7 +94,7 @@ $bytes = 0;
 $lastErr = '';
 foreach ($zipUrls as $zipUrl) {
     term("downloading {$zipUrl}");
-    [$bytes, $lastErr] = download($zipUrl, $zipFile, $authHeaders);
+    list($bytes, $lastErr) = download($zipUrl, $zipFile, $authHeaders);
     if ($bytes > 0) break;
     term("  failed: {$lastErr}");
 }
@@ -160,7 +174,7 @@ exit;
 
 // ---------- output helpers ----------
 
-function start_output(bool $plain): void {
+function start_output($plain) {
     global $TERM_PLAIN;
     $TERM_PLAIN = $plain;
 
@@ -188,7 +202,7 @@ function start_output(bool $plain): void {
     flush();
 }
 
-function end_output(): void {
+function end_output() {
     global $TERM_PLAIN;
     if (!$TERM_PLAIN) {
         echo "<script>window.__pullDone=true;</script></body></html>";
@@ -196,7 +210,7 @@ function end_output(): void {
     flush();
 }
 
-function term(string $msg): void {
+function term($msg) {
     global $TERM_PLAIN;
     if ($TERM_PLAIN) {
         echo $msg . "\n";
@@ -209,7 +223,7 @@ function term(string $msg): void {
     flush();
 }
 
-function print_finish_banner(float $startTs, string $startStr, string $tz, bool $ok, int $copied = 0): void {
+function print_finish_banner($startTs, $startStr, $tz, $ok, $copied = 0) {
     $endTs   = microtime(true);
     $endStr  = date('Y-m-d H:i:s');
     $dur     = $endTs - $startTs;
@@ -228,7 +242,7 @@ function print_finish_banner(float $startTs, string $startStr, string $tz, bool 
 
 // ---------- config loader ----------
 
-function load_config(string $path): array {
+function load_config($path) {
     $raw = require $path;
     if (!is_array($raw)) {
         http_response_code(500);
@@ -236,19 +250,19 @@ function load_config(string $path): array {
         exit("pull-config.php must return an array\n");
     }
     return [
-        'repo'       => (string)($raw['repo']       ?? ''),
-        'branch'     => (string)($raw['branch']     ?? 'main'),
-        'subdir'     => (string)($raw['subdir']     ?? '.'),
-        'secret'     => (string)($raw['secret']     ?? ''),
-        'gh_token'   => (string)($raw['gh_token']   ?? ''),
-        'keep_files' => is_array($raw['keep_files'] ?? null) ? array_values($raw['keep_files']) : [],
-        'timezone'   => (string)($raw['timezone']   ?? 'UTC'),
+        'repo'       => (string)(isset($raw['repo'])     ? $raw['repo']     : ''),
+        'branch'     => (string)(isset($raw['branch'])   ? $raw['branch']   : 'main'),
+        'subdir'     => (string)(isset($raw['subdir'])   ? $raw['subdir']   : '.'),
+        'secret'     => (string)(isset($raw['secret'])   ? $raw['secret']   : ''),
+        'gh_token'   => (string)(isset($raw['gh_token']) ? $raw['gh_token'] : ''),
+        'keep_files' => isset($raw['keep_files']) && is_array($raw['keep_files']) ? array_values($raw['keep_files']) : [],
+        'timezone'   => (string)(isset($raw['timezone']) ? $raw['timezone'] : 'UTC'),
     ];
 }
 
 // ---------- download / copy ----------
 
-function download(string $url, string $dest, array $extraHeaders = []): array {
+function download($url, $dest, $extraHeaders = []) {
     @unlink($dest);
     if (function_exists('curl_init')) {
         $fp = fopen($dest, 'wb');
@@ -296,7 +310,7 @@ function download(string $url, string $dest, array $extraHeaders = []): array {
     return [$size, $size > 0 ? '' : 'empty file'];
 }
 
-function copyTree(string $from, string $to, array $keepTopLevel, int &$copied): void {
+function copyTree($from, $to, $keepTopLevel, &$copied) {
     if (!is_dir($to) && !mkdir($to, 0755, true) && !is_dir($to)) return;
     foreach (new DirectoryIterator($from) as $f) {
         if ($f->isDot()) continue;
@@ -313,7 +327,7 @@ function copyTree(string $from, string $to, array $keepTopLevel, int &$copied): 
     }
 }
 
-function cleanup(string $dir): void {
+function cleanup($dir) {
     if (!is_dir($dir)) return;
     $it = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($dir, RecursiveDirectoryIterator::SKIP_DOTS),
@@ -327,14 +341,14 @@ function cleanup(string $dir): void {
 
 // ---------- first-run setup ----------
 
-function handle_setup_post(string $configPath): void {
-    $repo     = trim((string)($_POST['repo']     ?? ''));
-    $branch   = trim((string)($_POST['branch']   ?? 'main'));
-    $subdir   = trim((string)($_POST['subdir']   ?? '.'));
-    $secret   = (string)($_POST['secret']   ?? '');
-    $ghToken  = (string)($_POST['gh_token'] ?? '');
-    $timezone = trim((string)($_POST['timezone'] ?? 'UTC'));
-    $keepRaw  = (string)($_POST['keep_files'] ?? '');
+function handle_setup_post($configPath) {
+    $repo     = trim((string)(isset($_POST['repo'])       ? $_POST['repo']       : ''));
+    $branch   = trim((string)(isset($_POST['branch'])     ? $_POST['branch']     : 'main'));
+    $subdir   = trim((string)(isset($_POST['subdir'])     ? $_POST['subdir']     : '.'));
+    $secret   = (string)(isset($_POST['secret'])   ? $_POST['secret']   : '');
+    $ghToken  = (string)(isset($_POST['gh_token']) ? $_POST['gh_token'] : '');
+    $timezone = trim((string)(isset($_POST['timezone'])   ? $_POST['timezone']   : 'UTC'));
+    $keepRaw  = (string)(isset($_POST['keep_files']) ? $_POST['keep_files'] : '');
 
     $errors = [];
     if ($repo === '' || !preg_match('~^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$~', $repo)) {
@@ -392,15 +406,15 @@ function handle_setup_post(string $configPath): void {
     render_setup_done($config);
 }
 
-function render_setup_form(array $values = [], array $errors = []): void {
+function render_setup_form($values = [], $errors = []) {
     $h = function ($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
-    $repo     = $h($values['repo']     ?? '');
-    $branch   = $h($values['branch']   ?? 'main');
-    $subdir   = $h($values['subdir']   ?? '.');
-    $secret   = $h($values['secret']   ?? '');
-    $ghToken  = $h($values['gh_token'] ?? '');
-    $timezone = $h($values['timezone'] ?? 'UTC');
-    $keep     = $h($values['keep_files'] ?? 'pull.php, pull-config.php');
+    $repo     = $h(isset($values['repo'])     ? $values['repo']     : '');
+    $branch   = $h(isset($values['branch'])   ? $values['branch']   : 'main');
+    $subdir   = $h(isset($values['subdir'])   ? $values['subdir']   : '.');
+    $secret   = $h(isset($values['secret'])   ? $values['secret']   : '');
+    $ghToken  = $h(isset($values['gh_token']) ? $values['gh_token'] : '');
+    $timezone = $h(isset($values['timezone']) ? $values['timezone'] : 'UTC');
+    $keep     = $h(isset($values['keep_files']) ? $values['keep_files'] : 'pull.php, pull-config.php');
 
     header('Content-Type: text/html; charset=utf-8');
     echo "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">";
@@ -515,7 +529,7 @@ function render_setup_form(array $values = [], array $errors = []): void {
     echo "</body></html>";
 }
 
-function setup_field(string $name, string $label, string $value, string $placeholder, bool $password, array $help, bool $textarea = false): void {
+function setup_field($name, $label, $value, $placeholder, $password, $help, $textarea = false) {
     echo "<div class=\"fld\">";
     echo "<label for=\"f_{$name}\"><span class=\"prompt\">&gt;</span> {$label}</label>";
     echo "<div class=\"help\">";
@@ -531,7 +545,7 @@ function setup_field(string $name, string $label, string $value, string $placeho
     echo "</div>";
 }
 
-function render_setup_done(array $config): void {
+function render_setup_done($config) {
     $h = function ($v) { return htmlspecialchars((string)$v, ENT_QUOTES, 'UTF-8'); };
     header('Content-Type: text/html; charset=utf-8');
     echo "<!doctype html><html lang=\"en\"><head><meta charset=\"utf-8\">";
@@ -555,7 +569,7 @@ function render_setup_done(array $config): void {
 
 // ---------- CSS / JS ----------
 
-function terminal_css(): string {
+function terminal_css() {
     return <<<CSS
 <style>
 :root{
@@ -608,7 +622,7 @@ html,body{margin:0;padding:0;background:var(--bg2);color:var(--fg);
 CSS;
 }
 
-function terminal_js(bool $isForm = false): string {
+function terminal_js($isForm = false) {
     if ($isForm) {
         // Setup form: type the intro lines, then reveal the form.
         return <<<'JS'

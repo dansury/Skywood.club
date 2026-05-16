@@ -1,4 +1,9 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+// .env lives in public/ so it deploys with the static site (see CLAUDE.md).
+dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', 'public', '.env') });
 
 const env = process.env;
 const port = Number(env.PORT) || 3000;
