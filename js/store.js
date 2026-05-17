@@ -385,17 +385,30 @@
     const search = debounce(async () => {
       const q = cityInput.value.trim();
       if (q.length < 2) { list.classList.remove('show'); return; }
+      list.innerHTML = '<button disabled style="color:var(--muted);cursor:default">Поиск…</button>';
+      list.classList.add('show');
       try {
-        const cities = await fetch('api/cdek/cities?q=' + encodeURIComponent(q)).then((r) => r.json());
-        if (!cities.length) { list.classList.remove('show'); return; }
+        const res = await fetch('api/cdek/cities?q=' + encodeURIComponent(q));
+        const data = await res.json();
+        if (!res.ok) {
+          list.innerHTML = '<button disabled style="color:var(--muted);cursor:default">Сервис СДЭК недоступен — попробуйте позже</button>';
+          return;
+        }
+        const cities = Array.isArray(data) ? data : [];
+        if (!cities.length) {
+          list.innerHTML = '<button disabled style="color:var(--muted);cursor:default">Город не найден</button>';
+          return;
+        }
         list.innerHTML = cities.map((c, i) =>
           `<button data-i="${i}">${c.city}<span style="color:var(--muted)"> — ${c.region || ''}</span></button>`).join('');
         list._cities = cities;
-        list.classList.add('show');
-      } catch { list.classList.remove('show'); }
+      } catch {
+        list.innerHTML = '<button disabled style="color:var(--muted);cursor:default">Ошибка СДЭК — попробуйте ещё раз</button>';
+      }
     }, 280);
 
     cityInput.addEventListener('input', () => { ck.city = null; ck.delivery = null; search(); });
+    cityInput.addEventListener('blur', () => { setTimeout(() => list.classList.remove('show'), 200); });
     list.addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
       ck.city = list._cities[b.dataset.i];
