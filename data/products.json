@@ -76,7 +76,7 @@
       "packWidth": 20,
       "packHeight": 20,
       "images": ["jet1.jpeg", "jet2.jpeg", "jet3.jpeg", "jet-bottom.jpeg", "jet-entrance.jpeg", "jet-hood.jpeg"],
-      "video": "skywoodjet.mp4",
+      "video": "SkywoodJet.mp4",
       "features": [
         {
           "title": "Фиксация за три стропы",

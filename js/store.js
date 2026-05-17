@@ -52,6 +52,18 @@
     renderCart();
     if (DEMO) showDemoBar();
     bindGlobal();
+    if (document.readyState === 'complete') loadProductVideos();
+    else window.addEventListener('load', loadProductVideos, { once: true });
+  }
+
+  // Видео карточек грузим лениво — только после полной загрузки страницы.
+  function loadProductVideos() {
+    $$('.product__video[data-src]').forEach((v) => {
+      v.preload = 'auto';
+      v.src = v.dataset.src;
+      v.removeAttribute('data-src');
+      v.load();
+    });
   }
 
   function showDemoBar() {
@@ -74,13 +86,21 @@
     const save = p.oldPrice ? p.oldPrice - p.price : 0;
     const specs = Object.values(p.specs || {}).slice(0, 3)
       .map((v) => `<span>${v}</span>`).join('');
+    // Кадры галереи: первое фото, затем видео (если есть), затем остальные фото.
+    const frames = p.video
+      ? [{ type: 'img', src: p.images[0] },
+         { type: 'video', src: p.video },
+         ...p.images.slice(1).map((src) => ({ type: 'img', src }))]
+      : p.images.map((src) => ({ type: 'img', src }));
     art.innerHTML = `
       <div class="product__media">
         <img src="assets/img/${p.images[0]}" alt="${p.name}" loading="lazy">
+        ${p.video ? `<video class="product__video" muted loop playsinline preload="none" aria-hidden="true"
+          poster="assets/img/${p.images[0]}" data-src="assets/video/${p.video}"></video>` : ''}
         ${p.badge ? `<span class="product__badge ${p.oldPrice ? 'product__badge--sale' : ''}">${p.badge}</span>` : ''}
         ${p.available ? '' : '<div class="product__soldout">Под заказ</div>'}
-        <div class="product__dots">${p.images.map((_, i) =>
-          `<button data-i="${i}" class="${i === 0 ? 'active' : ''}" aria-label="Фото ${i + 1}"></button>`).join('')}</div>
+        <div class="product__dots">${frames.map((f, i) =>
+          `<button data-i="${i}" class="${i === 0 ? 'active' : ''}" aria-label="${f.type === 'video' ? 'Видео' : 'Фото ' + (i + 1)}"></button>`).join('')}</div>
       </div>
       <div class="product__body">
         <span class="product__cat">${p.category}</span>
@@ -97,18 +117,70 @@
           <button class="btn btn--primary btn--sm" data-act="buy">В корзину</button>
         </div>
       </div>`;
-    const img = $('.product__media img', art);
+    const media = $('.product__media', art);
+    const img = $('img', media);
+    const video = $('.product__video', media);
+    const dots = $$('.product__dots button', media);
+    let curIdx = 0;
+    const setImage = (idx) => {
+      idx = Math.max(0, Math.min(frames.length - 1, idx));
+      if (idx === curIdx) return;
+      curIdx = idx;
+      const f = frames[idx];
+      if (f.type === 'video') {
+        if (!video.src && video.dataset.src) {
+          video.src = video.dataset.src;
+          video.removeAttribute('data-src');
+        }
+        video.classList.add('show');
+        video.play().catch(() => {});
+      } else {
+        if (video) { video.classList.remove('show'); video.pause(); }
+        img.src = `assets/img/${f.src}`;
+      }
+      media.querySelector('.product__dots .active')?.classList.remove('active');
+      dots[idx]?.classList.add('active');
+    };
     $('.product__dots', art).addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
-      img.src = `assets/img/${p.images[b.dataset.i]}`;
-      $('.product__dots .active', art)?.classList.remove('active');
-      b.classList.add('active');
+      setImage(+b.dataset.i);
     });
+    if (frames.length > 1) bindGalleryNav(media, frames, setImage, () => curIdx);
     $('[data-act="details"]', art).addEventListener('click', () => openProduct(p.id));
     $('[data-act="buy"]', art).addEventListener('click', () => {
       addToCart(p.id);
     });
     return art;
+  }
+
+  /* Навигация по галерее карточки: свайп на тач-устройствах,
+     перелистывание по позиции курсора при наведении на десктопе. */
+  function bindGalleryNav(media, frames, setImage, getIdx) {
+    // Предзагрузка фото-кадров (видео грузится отдельно после загрузки страницы).
+    frames.forEach((f, i) => {
+      if (i > 0 && f.type === 'img') new Image().src = `assets/img/${f.src}`;
+    });
+
+    let startX = 0, startY = 0, swiping = false;
+    media.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      swiping = true;
+    }, { passive: true });
+    media.addEventListener('touchend', (e) => {
+      if (!swiping) return;
+      swiping = false;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) < 40 || Math.abs(dx) <= Math.abs(dy)) return;
+      setImage(getIdx() + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+
+    media.addEventListener('mousemove', (e) => {
+      const r = media.getBoundingClientRect();
+      setImage(Math.floor(((e.clientX - r.left) / r.width) * frames.length));
+    });
+    media.addEventListener('mouseleave', () => setImage(0));
   }
 
   /* ---------- модалка товара ---------- */
