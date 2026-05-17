@@ -95,7 +95,6 @@ function sw_config(): array
         'company' => [
             'legalName' => 'ИП Сурков К.А.',
             'inn'       => '773135420168',
-            'address'   => 'г. Красногорск, ул. Пришвина, д. 11',
             'phone'     => '+7 977 508-45-85',
             'phoneRaw'  => '+79775084585',
             'email'     => 'info@skywood.club',
