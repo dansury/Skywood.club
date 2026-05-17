@@ -177,13 +177,17 @@ try {
             $ql = mb_strtolower($q);
             $hit = [];
             foreach (SW_DEMO_CITIES as $city) {
-                if (strpos(mb_strtolower($city['city']), $ql) === 0) {
+                if (mb_strpos(mb_strtolower($city['city']), $ql) !== false) {
                     $hit[] = $city;
                 }
             }
             sw_json($hit);
         }
-        sw_json(sw_cdek_search_cities($q));
+        try {
+            sw_json(sw_cdek_search_cities($q));
+        } catch (Throwable $e) {
+            sw_json(['error' => $e->getMessage()], 502);
+        }
     }
 
     // GET /api/cdek/points?city_code=
