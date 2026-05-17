@@ -97,18 +97,56 @@
           <button class="btn btn--primary btn--sm" data-act="buy">В корзину</button>
         </div>
       </div>`;
-    const img = $('.product__media img', art);
+    const media = $('.product__media', art);
+    const img = $('img', media);
+    const dots = $$('.product__dots button', media);
+    let curIdx = 0;
+    const setImage = (idx) => {
+      idx = Math.max(0, Math.min(p.images.length - 1, idx));
+      if (idx === curIdx) return;
+      curIdx = idx;
+      img.src = `assets/img/${p.images[idx]}`;
+      media.querySelector('.product__dots .active')?.classList.remove('active');
+      dots[idx]?.classList.add('active');
+    };
     $('.product__dots', art).addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
-      img.src = `assets/img/${p.images[b.dataset.i]}`;
-      $('.product__dots .active', art)?.classList.remove('active');
-      b.classList.add('active');
+      setImage(+b.dataset.i);
     });
+    if (p.images.length > 1) bindGalleryNav(media, p.images, setImage, () => curIdx);
     $('[data-act="details"]', art).addEventListener('click', () => openProduct(p.id));
     $('[data-act="buy"]', art).addEventListener('click', () => {
       addToCart(p.id);
     });
     return art;
+  }
+
+  /* Навигация по галерее карточки: свайп на тач-устройствах,
+     перелистывание по позиции курсора при наведении на десктопе. */
+  function bindGalleryNav(media, images, setImage, getIdx) {
+    // Предзагрузка остальных кадров, чтобы переключение было мгновенным.
+    images.slice(1).forEach((im) => { new Image().src = `assets/img/${im}`; });
+
+    let startX = 0, startY = 0, swiping = false;
+    media.addEventListener('touchstart', (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      swiping = true;
+    }, { passive: true });
+    media.addEventListener('touchend', (e) => {
+      if (!swiping) return;
+      swiping = false;
+      const dx = e.changedTouches[0].clientX - startX;
+      const dy = e.changedTouches[0].clientY - startY;
+      if (Math.abs(dx) < 40 || Math.abs(dx) <= Math.abs(dy)) return;
+      setImage(getIdx() + (dx < 0 ? 1 : -1));
+    }, { passive: true });
+
+    media.addEventListener('mousemove', (e) => {
+      const r = media.getBoundingClientRect();
+      setImage(Math.floor(((e.clientX - r.left) / r.width) * images.length));
+    });
+    media.addEventListener('mouseleave', () => setImage(0));
   }
 
   /* ---------- модалка товара ---------- */
