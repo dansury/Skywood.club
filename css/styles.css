@@ -96,6 +96,8 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
     radial-gradient(120% 90% at 20% 10%,rgba(14,23,18,.25),transparent 55%),
     linear-gradient(180deg,rgba(14,23,18,.55) 0%,rgba(14,23,18,.35) 40%,rgba(14,23,18,.96) 100%)}
 .hero__content{position:relative;max-width:760px}
+.hero__logo{height:120px;width:auto;margin:0 auto 40px;display:block;opacity:0.95;transition:transform .3s ease-out}
+.hero__content:hover .hero__logo{transform:scale(1.05)}
 .hero__eyebrow{
   display:inline-block;font-weight:700;font-size:13px;letter-spacing:.18em;
   text-transform:uppercase;color:var(--accent);
@@ -137,20 +139,13 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
 
 /* Pixelated transition between sections */
 .section--white::before{
-  content:'';position:absolute;top:-40px;left:0;right:0;height:40px;
-  background:repeating-linear-gradient(
-    90deg,
-    rgba(14,23,18,1) 0px,rgba(14,23,18,1) 2px,
-    rgba(255,255,255,0) 2px,rgba(255,255,255,0) 4px,
-    rgba(14,23,18,0.8) 4px,rgba(14,23,18,0.8) 6px,
-    rgba(255,255,255,0.2) 6px,rgba(255,255,255,0.2) 8px,
-    rgba(14,23,18,0.6) 8px,rgba(14,23,18,0.6) 10px,
-    #fff 10px,#fff 40px
-  );
+  content:'';position:absolute;top:-60px;left:0;right:0;height:60px;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,1) 2px, transparent 2px),
+    linear-gradient(180deg, rgba(14,23,18,.95) 0%, rgba(14,23,18,.7) 30%, rgba(14,23,18,.4) 60%, rgba(255,255,255,0) 100%);
+  background-size:12px 12px, 100% 100%;
+  background-position:0 0, 0 0;
   z-index:1;pointer-events:none;
-}
-.section--white::before:not(:first-of-type){
-  display:none;
 }
 .section__head{max-width:680px;margin:0 auto 60px;text-align:center}
 .eyebrow{font-weight:700;font-size:13px;letter-spacing:.16em;text-transform:uppercase;
@@ -281,17 +276,13 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
 .finale--white .finale__content h2{color:#1a1a1a}
 .finale--white .finale__content p{color:#666}
 .finale--white .btn--primary{background:var(--accent);color:#0c160c}
-.finale--white::before{
-  content:'';position:absolute;bottom:-40px;left:0;right:0;height:40px;
-  background:repeating-linear-gradient(
-    90deg,
-    rgba(14,23,18,1) 0px,rgba(14,23,18,1) 2px,
-    rgba(255,255,255,0) 2px,rgba(255,255,255,0) 4px,
-    rgba(14,23,18,0.8) 4px,rgba(14,23,18,0.8) 6px,
-    rgba(255,255,255,0.2) 6px,rgba(255,255,255,0.2) 8px,
-    rgba(14,23,18,0.6) 8px,rgba(14,23,18,0.6) 10px,
-    #1a1a1a 10px,#1a1a1a 40px
-  );
+.finale--white::after{
+  content:'';position:absolute;bottom:-60px;left:0;right:0;height:60px;
+  background-image:
+    radial-gradient(circle, rgba(0,0,0,.8) 2px, transparent 2px),
+    linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.4) 40%, rgba(255,255,255,.7) 70%, rgba(255,255,255,1) 100%);
+  background-size:12px 12px, 100% 100%;
+  background-position:0 0, 0 0;
   z-index:1;pointer-events:none;
 }
 
