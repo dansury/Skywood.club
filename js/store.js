@@ -92,7 +92,7 @@
     const img = $('.product__media img', art);
     $('.product__dots', art).addEventListener('click', (e) => {
       const b = e.target.closest('button'); if (!b) return;
-      img.src = `/assets/img/${p.images[b.dataset.i]}`;
+      img.src = `assets/img/${p.images[b.dataset.i]}`;
       $('.product__dots .active', art)?.classList.remove('active');
       b.classList.add('active');
     });
@@ -138,8 +138,7 @@
           <button class="btn btn--primary btn--block" id="pmBuy">В корзину</button>
         </div>
       </div>`;
-    const main = $('#pmMain', box);
-    const mainImg = main.querySelector('img');
+    const mainImg = $('#pmMain', box);
     const thumbs = box.querySelector('.pm__thumbs');
     const thumbImgs = Array.from(thumbs.querySelectorAll('img'));
 
@@ -168,8 +167,8 @@
 
     // Swipe support
     let touchStartX = 0;
-    main.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
-    main.addEventListener('touchend', (e) => {
+    mainImg.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+    mainImg.addEventListener('touchend', (e) => {
       const touchEndX = e.changedTouches[0].clientX;
       const activeIdx = thumbImgs.findIndex(img => img.classList.contains('active'));
       if (touchEndX < touchStartX - 50 && activeIdx < thumbImgs.length - 1) {
