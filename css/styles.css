@@ -141,14 +141,24 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
 .section--white .review p{color:#333}
 .section--white .review footer{color:#888}
 
-/* Pixelated transition between sections */
+/* Polka-dot gradient transition between sections */
 .section--white::before{
-  content:'';position:absolute;top:-60px;left:0;right:0;height:60px;
+  content:'';position:absolute;top:-80px;left:0;right:0;height:80px;
   background-image:
-    radial-gradient(circle, rgba(255,255,255,1) 2px, transparent 2px),
-    linear-gradient(180deg, rgba(14,23,18,.95) 0%, rgba(14,23,18,.7) 30%, rgba(14,23,18,.4) 60%, rgba(255,255,255,0) 100%);
-  background-size:12px 12px, 100% 100%;
-  background-position:0 0, 0 0;
+    radial-gradient(circle, rgba(255,255,255,4px), transparent 4px),
+    radial-gradient(circle, rgba(255,255,255,2px), transparent 2px),
+    radial-gradient(circle, rgba(255,255,255,6px), transparent 6px),
+    radial-gradient(circle, rgba(255,255,255,3px), transparent 3px),
+    radial-gradient(circle, rgba(255,255,255,5px), transparent 5px),
+    linear-gradient(180deg, rgba(14,23,18,.95) 0%, rgba(14,23,18,.85) 15%, rgba(14,23,18,.6) 40%, rgba(14,23,18,.3) 70%, rgba(255,255,255,0) 100%);
+  background-size:
+    24px 16px,
+    32px 20px,
+    28px 18px,
+    36px 22px,
+    40px 24px,
+    100% 100%;
+  background-position:0 0, 8px 4px, 16px 2px, 4px 8px, 20px 6px, 0 0;
   z-index:1;pointer-events:none;
 }
 .section__head{max-width:680px;margin:0 auto 60px;text-align:center}
@@ -283,12 +293,22 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
 .finale--white .finale__content p{color:#666}
 .finale--white .btn--primary{background:var(--accent);color:#0c160c}
 .finale--white::after{
-  content:'';position:absolute;bottom:-60px;left:0;right:0;height:60px;
+  content:'';position:absolute;bottom:-80px;left:0;right:0;height:80px;
   background-image:
-    radial-gradient(circle, rgba(0,0,0,.8) 2px, transparent 2px),
-    linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.4) 40%, rgba(255,255,255,.7) 70%, rgba(255,255,255,1) 100%);
-  background-size:12px 12px, 100% 100%;
-  background-position:0 0, 0 0;
+    radial-gradient(circle, rgba(14,23,18,4px), transparent 4px),
+    radial-gradient(circle, rgba(14,23,18,2px), transparent 2px),
+    radial-gradient(circle, rgba(14,23,18,6px), transparent 6px),
+    radial-gradient(circle, rgba(14,23,18,3px), transparent 3px),
+    radial-gradient(circle, rgba(14,23,18,5px), transparent 5px),
+    linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.3) 30%, rgba(255,255,255,.6) 60%, rgba(255,255,255,.9) 85%, rgba(14,23,18,1) 100%);
+  background-size:
+    24px 16px,
+    32px 20px,
+    28px 18px,
+    36px 22px,
+    40px 24px,
+    100% 100%;
+  background-position:0 0, 8px 4px, 16px 2px, 4px 8px, 20px 6px, 0 0;
   z-index:1;pointer-events:none;
 }
 
@@ -354,10 +374,14 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
 
 /* — модалка товара — */
 .pm{display:grid;grid-template-columns:1fr 1fr}
-.pm__gallery{background:var(--bg)}
+.pm__gallery{background:var(--bg);position:relative}
 .pm__video{width:100%;max-width:100%;aspect-ratio:16/9;margin-bottom:12px;border-radius:var(--radius);overflow:hidden}
-.pm__main{aspect-ratio:1;overflow:hidden}
-.pm__main img{width:100%;height:100%;object-fit:cover}
+.pm__main{width:100%;max-height:400px;overflow:hidden;border-radius:var(--radius);position:relative}
+.pm__main img{width:100%;height:100%;object-fit:contain;background:#000}
+.pm__nav{position:absolute;top:50%;transform:translateY(-50%);width:100%;display:flex;justify-content:space-between;padding:0 12px;z-index:10;opacity:0;transition:opacity .2s;pointer-events:none}
+.pm__gallery:hover .pm__nav{opacity:1}
+.pm__nav button{pointer-events:all;width:40px;height:40px;background:rgba(127,191,91,.8);border-radius:50%;display:grid;place-items:center;color:#fff;font-size:20px;cursor:pointer;transition:background .2s}
+.pm__nav button:hover{background:var(--accent)}
 .pm__thumbs{display:flex;gap:8px;padding:12px;overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;scroll-behavior:smooth}
 .pm__thumbs::-webkit-scrollbar{height:6px}
 .pm__thumbs::-webkit-scrollbar-track{background:rgba(255,255,255,.1);border-radius:3px}

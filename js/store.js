@@ -113,7 +113,13 @@
       <div class="pm">
         <div class="pm__gallery">
           ${p.video ? `<video class="pm__video" autoplay muted loop playsinline controls preload="auto"><source src="assets/video/${p.video}" type="video/mp4"></video>` : ''}
-          <div class="pm__main"><img src="assets/img/${p.images[0]}" alt="${p.name}" id="pmMain"></div>
+          <div class="pm__main">
+            <img src="assets/img/${p.images[0]}" alt="${p.name}" id="pmMain">
+            <div class="pm__nav">
+              <button id="pmPrev" aria-label="Предыдущее фото">❮</button>
+              <button id="pmNext" aria-label="Следующее фото">❯</button>
+            </div>
+          </div>
           <div class="pm__thumbs">${p.images.map((im, i) =>
             `<img src="assets/img/${im}" data-i="${i}" class="${i === 0 ? 'active' : ''}" alt="">`).join('')}</div>
         </div>
@@ -133,14 +139,31 @@
         </div>
       </div>`;
     const main = $('#pmMain', box);
+    const mainImg = main.querySelector('img');
     const thumbs = box.querySelector('.pm__thumbs');
     const thumbImgs = Array.from(thumbs.querySelectorAll('img'));
 
+    const updateImage = (idx) => {
+      mainImg.src = thumbImgs[idx].src;
+      box.querySelector('.pm__thumbs .active')?.classList.remove('active');
+      thumbImgs[idx].classList.add('active');
+      thumbs.scrollLeft = Math.max(0, (idx - 1) * 62);
+    };
+
     thumbs.addEventListener('click', (e) => {
       const t = e.target.closest('img'); if (!t) return;
-      main.src = t.src;
-      box.querySelector('.pm__thumbs .active')?.classList.remove('active');
-      t.classList.add('active');
+      const idx = thumbImgs.indexOf(t);
+      updateImage(idx);
+    });
+
+    $('#pmPrev', box).addEventListener('click', () => {
+      const activeIdx = thumbImgs.findIndex(img => img.classList.contains('active'));
+      if (activeIdx > 0) updateImage(activeIdx - 1);
+    });
+
+    $('#pmNext', box).addEventListener('click', () => {
+      const activeIdx = thumbImgs.findIndex(img => img.classList.contains('active'));
+      if (activeIdx < thumbImgs.length - 1) updateImage(activeIdx + 1);
     });
 
     // Swipe support
