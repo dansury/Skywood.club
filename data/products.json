@@ -23,7 +23,7 @@
       "packLength": 50,
       "packWidth": 20,
       "packHeight": 20,
-      "images": ["hammock-1.jpg", "hammock-2.jpg", "hammock-3.jpg", "hammock-4.jpg", "hammock-5.jpg", "hammock-6.jpg"],
+      "images": ["haven1.jpeg", "haven2.jpeg", "haven3.jpeg", "haven4.jpeg", "haven5.jpeg", "haven6.jpeg"],
       "video": "haventent.mp4",
       "features": [
         {
@@ -75,7 +75,7 @@
       "packLength": 50,
       "packWidth": 20,
       "packHeight": 20,
-      "images": ["jet-1.jpg", "jet-2.jpg", "jet-3.jpg", "jet-4.jpg", "jet-5.jpg", "jet-6.jpg"],
+      "images": ["jet1.jpeg", "jet2.jpeg", "jet3.jpeg", "jet-bottom.jpeg", "jet-entrance.jpeg", "jet-hood.jpeg"],
       "video": "skywoodjet.mp4",
       "features": [
         {

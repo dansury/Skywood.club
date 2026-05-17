@@ -133,12 +133,42 @@
         </div>
       </div>`;
     const main = $('#pmMain', box);
-    box.querySelector('.pm__thumbs').addEventListener('click', (e) => {
+    const thumbs = box.querySelector('.pm__thumbs');
+    const thumbImgs = Array.from(thumbs.querySelectorAll('img'));
+
+    thumbs.addEventListener('click', (e) => {
       const t = e.target.closest('img'); if (!t) return;
       main.src = t.src;
       box.querySelector('.pm__thumbs .active')?.classList.remove('active');
       t.classList.add('active');
     });
+
+    // Swipe support
+    let touchStartX = 0;
+    main.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+    main.addEventListener('touchend', (e) => {
+      const touchEndX = e.changedTouches[0].clientX;
+      const activeIdx = thumbImgs.findIndex(img => img.classList.contains('active'));
+      if (touchEndX < touchStartX - 50 && activeIdx < thumbImgs.length - 1) {
+        thumbImgs[activeIdx + 1].click();
+      } else if (touchEndX > touchStartX + 50 && activeIdx > 0) {
+        thumbImgs[activeIdx - 1].click();
+      }
+    });
+
+    // Keyboard navigation
+    const handleKeyboard = (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const activeIdx = thumbImgs.findIndex(img => img.classList.contains('active'));
+        if (e.key === 'ArrowRight' && activeIdx < thumbImgs.length - 1) {
+          thumbImgs[activeIdx + 1].click();
+        } else if (e.key === 'ArrowLeft' && activeIdx > 0) {
+          thumbImgs[activeIdx - 1].click();
+        }
+      }
+    };
+    box.addEventListener('keydown', handleKeyboard);
+
     $('#pmBuy', box).addEventListener('click', () => { addToCart(p.id); closeModal('#productModal'); });
     openModal('#productModal');
   }
