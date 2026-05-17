@@ -18,13 +18,17 @@ order `paid`.
 
 ## CDEK — api/lib/cdek.php
 
-CDEK API v2. Base `api.cdek.ru/v2` (test: `api.edu.cdek.ru/v2`). Functions
-prefixed `sw_cdek_`.
+Official CDEK API v2. Base `https://api.cdek.ru/v2` (test:
+`https://api.edu.cdek.ru/v2`). Functions prefixed `sw_cdek_`.
 
 - OAuth `client_credentials` → bearer token, cached to `data/.cdek-token.json`
-  until `expires_in`.
+  until `expires_in`. On failure throws `CDEK OAuth: <error_description>` so the
+  real cause (bad key vs. other) is visible.
 - `SW_CDEK_TARIFF_PVZ` 136 (склад-склад), `SW_CDEK_TARIFF_DOOR` 137 (склад-дверь).
-- `sw_cdek_search_cities(q)` — `GET /location/cities`.
+- `SW_CDEK_CITIES_TTL` 2592000 (30 дней) — TTL городского кэша.
+- `sw_cdek_search_cities(q)` — `GET /location/cities`. Per-query results cached
+  to `data/.cdek-cities.json` (`{ "<query>": {at,cities} }`). Normal mode serves
+  from cache; debug mode (`?debug=1`) ignores the cache and rewrites it fresh.
 - `sw_cdek_pickup_points(cityCode)` — `GET /deliverypoints?type=PVZ`.
 - `sw_cdek_calculate(tariffCode,toCityCode,items)` — `POST /calculator/tariff`;
   `sw_cdek_packages()` derives weight/dimensions from catalog.

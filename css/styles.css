@@ -497,3 +497,22 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
   *{animation-duration:.01ms!important;transition-duration:.01ms!important}
   .reveal{opacity:1;transform:none}
 }
+
+/* ===================== DEBUG-ПАНЕЛЬ (?debug=1) ===================== */
+.sw-debug{position:fixed;left:0;right:0;bottom:0;z-index:200;
+  display:flex;flex-direction:column;max-height:44vh;
+  background:#0c0f14;border-top:2px solid #e8623a;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;
+  box-shadow:0 -22px 50px -24px rgba(0,0,0,.85)}
+.sw-debug--min{max-height:none}
+.sw-debug--min .sw-debug__body{display:none}
+.sw-debug__bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:7px 12px;background:#151b25;color:#e6e9ef}
+.sw-debug__bar strong{color:#e8623a;letter-spacing:.12em}
+.sw-debug__bar button{background:#e8623a;color:#fff;border:0;border-radius:6px;
+  padding:5px 11px;font:inherit;cursor:pointer}
+.sw-debug__bar button:hover{opacity:.88}
+.sw-debug__body{overflow:auto;padding:6px 12px 12px;color:#cdd3dc}
+.sw-debug__row{border-bottom:1px solid #222b38;padding:6px 0}
+.sw-debug__row b{color:#7fd28a;display:block;margin-bottom:3px}
+.sw-debug__row pre{white-space:pre-wrap;word-break:break-word;margin:0;color:#aab3c0}

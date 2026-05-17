@@ -2,6 +2,7 @@
 .env.local
 data/orders.json
 data/.cdek-token.json
+data/.cdek-cities.json
 data/.installed
 *.log
 .DS_Store

@@ -4,11 +4,20 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/lib/debug.php';
 require_once __DIR__ . '/lib/config.php';
 require_once __DIR__ . '/lib/catalog.php';
 require_once __DIR__ . '/lib/store.php';
 require_once __DIR__ . '/lib/cdek.php';
 require_once __DIR__ . '/lib/tinkoff.php';
+
+// В debug-режиме (?debug=1) показываем PHP-ошибки, чтобы их можно было
+// скопировать; в обычном режиме они скрыты.
+if (sw_debug_enabled()) {
+    @ini_set('display_errors', '1');
+    @ini_set('html_errors', '0');
+    error_reporting(E_ALL);
+}
 
 // ---------- helpers ----------
 
@@ -17,6 +26,20 @@ function sw_json($data, int $status = 200): void
     http_response_code($status);
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
+    if (sw_debug_enabled()) {
+        $log = sw_debug_dump();
+        // Заголовок — ASCII-safe (\u-эскейпы), чтобы кириллица не ломала его.
+        $hdr = json_encode($log);
+        if (is_string($hdr)) {
+            header('X-Sw-Debug: ' . str_replace(["\r", "\n"], ' ', mb_substr($hdr, 0, 6000)));
+        }
+        // В тело трассу добавляем только для объектов — список (города и т.п.)
+        // должен остаться массивом.
+        if (is_array($data) && count($data) > 0
+            && array_keys($data) !== range(0, count($data) - 1)) {
+            $data['_debug'] = $log;
+        }
+    }
     echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
 }
@@ -331,7 +354,57 @@ try {
         sw_text('OK');
     }
 
+    // GET /api/cdek/diag — самодиагностика интеграции СДЭК.
+    // Проверяет доступы и официальный API; добавьте ?debug=1 для полной трассы.
+    if ($route === 'cdek/diag' && $method === 'GET') {
+        $cdek = sw_config()['cdek'];
+        $report = [
+            'time' => date('c'),
+            'php'  => ['version' => PHP_VERSION, 'curl' => function_exists('curl_init')],
+            'cdek' => [
+                'enabled'          => $cdek['enabled'],
+                'api'              => $cdek['api'],
+                'officialApi'      => in_array($cdek['api'], ['https://api.cdek.ru/v2', 'https://api.edu.cdek.ru/v2'], true),
+                'account'          => $cdek['account'],
+                'securePassword'   => $cdek['securePassword'] !== ''
+                    ? 'задан (' . mb_strlen($cdek['securePassword']) . ' симв.)' : 'НЕ ЗАДАН',
+                'senderCityCode'   => $cdek['senderCityCode'],
+                'senderPostalCode' => $cdek['senderPostalCode'],
+            ],
+        ];
+        if (!$cdek['enabled']) {
+            $report['result'] = 'CDEK выключен — в .env заданы не все доступы (CDEK_ACCOUNT / CDEK_SECURE_PASSWORD).';
+            sw_json($report, 200);
+        }
+        try {
+            $token = sw_cdek_token();
+            $report['oauth'] = ['ok' => true, 'tokenLength' => strlen($token)];
+        } catch (Throwable $e) {
+            $report['oauth'] = ['ok' => false, 'error' => $e->getMessage()];
+            $report['result'] = 'Авторизация СДЭК не прошла — проблема в КЛЮЧЕ (CDEK_ACCOUNT / CDEK_SECURE_PASSWORD).';
+            sw_json($report, 502);
+        }
+        try {
+            $cities = sw_cdek_search_cities('Москва');
+            $report['cities'] = ['ok' => true, 'count' => count($cities), 'sample' => $cities[0] ?? null];
+            $report['result'] = $cities
+                ? 'СДЭК отвечает — авторизация и поиск городов работают.'
+                : 'Авторизация прошла, но поиск городов вернул пустой список.';
+        } catch (Throwable $e) {
+            $report['cities'] = ['ok' => false, 'error' => $e->getMessage()];
+            $report['result'] = 'Ключ рабочий (авторизация прошла), но запрос городов падает — проблема в КОДЕ или endpoint СДЭК.';
+            sw_json($report, 502);
+        }
+        sw_json($report, 200);
+    }
+
     sw_json(['error' => 'Маршрут не найден'], 404);
 } catch (Throwable $e) {
+    sw_debug_add('exception', [
+        'class'   => get_class($e),
+        'message' => $e->getMessage(),
+        'where'   => $e->getFile() . ':' . $e->getLine(),
+        'trace'   => explode("\n", $e->getTraceAsString()),
+    ]);
     sw_json(['error' => $e->getMessage() !== '' ? $e->getMessage() : 'Внутренняя ошибка сервера'], 500);
 }
