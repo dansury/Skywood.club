@@ -3,6 +3,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/debug.php';
+
 function sw_http_request(string $method, string $url, array $opts = []): array
 {
     if (!function_exists('curl_init')) {
@@ -28,6 +30,15 @@ function sw_http_request(string $method, string $url, array $opts = []): array
     $errstr = curl_error($ch);
     $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
+
+    sw_debug_add('http', [
+        'method'   => $method,
+        'url'      => sw_debug_mask($url),
+        'status'   => $status,
+        'curlErr'  => $errno !== 0 ? "{$errno} {$errstr}" : null,
+        'request'  => $body !== null ? mb_substr(sw_debug_mask((string)$body), 0, 600) : null,
+        'response' => mb_substr((string)$raw, 0, 1500),
+    ]);
 
     if ($errno !== 0) {
         throw new RuntimeException("Сетевая ошибка: {$errstr}");

@@ -9,6 +9,13 @@
     return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
   };
 
+  /* ---------- debug-режим (?debug=1) ---------- */
+  const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
+  const dbg = { entries: [] };
+  // Пробрасываем ?debug=1 на бэкенд, чтобы он вернул трассу запроса.
+  const apiPath = (p) =>
+    'api/' + p + (DEBUG ? (p.includes('?') ? '&' : '?') + 'debug=1' : '');
+
   let PRODUCTS = [];
   let COMPANY = {};
   let DEMO = false;
@@ -30,11 +37,12 @@
 
   /* ---------- запуск ---------- */
   async function init() {
+    debugInit();
     try {
-      const data = await fetch('api/products').then((r) => r.json());
-      PRODUCTS = data.products || [];
-      COMPANY = data.company || {};
-      DEMO = !!data.demo;
+      const { data } = await apiFetch('products');
+      PRODUCTS = (data && data.products) || [];
+      COMPANY = (data && data.company) || {};
+      DEMO = !!(data && data.demo);
     } catch {
       toast('Не удалось загрузить каталог');
       return;
@@ -386,23 +394,28 @@
       if (q.length < 2) { list.classList.remove('show'); return; }
       list.innerHTML = '<button disabled style="color:var(--muted);cursor:default">Поиск…</button>';
       list.classList.add('show');
+      const note = (msg) =>
+        `<button disabled style="color:var(--muted);cursor:default">${esc(msg)}</button>`;
       try {
-        const res = await fetch('api/cdek/cities?q=' + encodeURIComponent(q));
-        const data = await res.json();
-        if (!res.ok) {
-          list.innerHTML = '<button disabled style="color:var(--muted);cursor:default">Сервис СДЭК недоступен — попробуйте позже</button>';
+        const { res, data } = await apiFetch('cdek/cities?q=' + encodeURIComponent(q));
+        if (!res.ok || (data && data.error)) {
+          // В debug-режиме показываем настоящую ошибку СДЭК, иначе — общий текст.
+          const detail = data && data.error ? data.error : 'HTTP ' + res.status;
+          list.innerHTML = note(DEBUG ? 'Ошибка СДЭК: ' + detail
+            : 'Сервис СДЭК недоступен — попробуйте позже');
           return;
         }
         const cities = Array.isArray(data) ? data : [];
         if (!cities.length) {
-          list.innerHTML = '<button disabled style="color:var(--muted);cursor:default">Город не найден</button>';
+          list.innerHTML = note('Город не найден');
           return;
         }
         list.innerHTML = cities.map((c, i) =>
-          `<button data-i="${i}">${c.city}<span style="color:var(--muted)"> — ${c.region || ''}</span></button>`).join('');
+          `<button data-i="${i}">${esc(c.city)}<span style="color:var(--muted)"> — ${esc(c.region || '')}</span></button>`).join('');
         list._cities = cities;
-      } catch {
-        list.innerHTML = '<button disabled style="color:var(--muted);cursor:default">Ошибка СДЭК — попробуйте ещё раз</button>';
+      } catch (e) {
+        list.innerHTML = note(DEBUG ? 'Ошибка запроса: ' + e.message
+          : 'Ошибка СДЭК — попробуйте ещё раз');
       }
     }, 280);
 
@@ -451,13 +464,18 @@
     if (!sel || !ck.city) return;
     sel.innerHTML = '<option value="">Загрузка пунктов…</option>';
     try {
-      ck.points = await fetch('api/cdek/points?city_code=' + ck.city.code).then((r) => r.json());
+      const { data } = await apiFetch('cdek/points?city_code=' + ck.city.code);
+      if (data && data.error) {
+        sel.innerHTML = `<option value="">${esc(DEBUG ? 'Ошибка: ' + data.error : 'Ошибка загрузки пунктов')}</option>`;
+        return;
+      }
+      ck.points = Array.isArray(data) ? data : [];
       if (!ck.points.length) { sel.innerHTML = '<option value="">Нет ПВЗ в этом городе</option>'; return; }
       sel.innerHTML = '<option value="">Выберите пункт выдачи</option>' +
         ck.points.map((p) => `<option value="${p.code}">${p.name} — ${p.address || ''}</option>`).join('');
       if (ck.pvz) sel.value = ck.pvz.code;
-    } catch {
-      sel.innerHTML = '<option value="">Ошибка загрузки пунктов</option>';
+    } catch (e) {
+      sel.innerHTML = `<option value="">${esc(DEBUG ? 'Ошибка: ' + e.message : 'Ошибка загрузки пунктов')}</option>`;
     }
   }
 
@@ -467,7 +485,7 @@
     ck.delivery = null;
     info.innerHTML = '<div class="hint">Считаем стоимость доставки…</div>';
     try {
-      const r = await fetch('api/cdek/calculate', {
+      const { data: r } = await apiFetch('cdek/calculate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -475,8 +493,8 @@
           toCityCode: ck.city.code,
           items: cart.map((c) => ({ id: c.id, qty: c.qty })),
         }),
-      }).then((r) => r.json());
-      if (r.error) throw new Error(r.error);
+      });
+      if (!r || r.error) throw new Error((r && r.error) || 'Сервис расчёта недоступен');
       ck.delivery = r;
       info.innerHTML = `<div class="ck__summary"><div class="row">
         <span>Доставка СДЭК в ${esc(ck.city.city)}</span><strong style="color:var(--text)">${money(r.cost)}</strong></div>
@@ -536,7 +554,7 @@
     const errBox = $('#ckSubmitErr');
     errBox.innerHTML = '';
     try {
-      const res = await fetch('api/orders', {
+      const { data: res } = await apiFetch('orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -552,8 +570,9 @@
           },
           paymentMethod: ck.payment,
         }),
-      }).then((r) => r.json());
+      });
 
+      if (!res) throw new Error('Пустой ответ сервера');
       if (res.errors) throw new Error(res.errors.join('. '));
       if (res.error) throw new Error(res.error);
 
@@ -597,6 +616,97 @@
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
   }
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  /* ---------- debug: панель ошибок и обёртка над fetch ---------- */
+  function debugLog(label, data) {
+    if (!DEBUG) return;
+    dbg.entries.push({ at: new Date().toLocaleTimeString('ru-RU'), label, data });
+    renderDebug();
+  }
+
+  function debugText() {
+    return dbg.entries.map((e) =>
+      `[${e.at}] ${e.label}\n` +
+      (typeof e.data === 'string' ? e.data : JSON.stringify(e.data, null, 2))
+    ).join('\n\n');
+  }
+
+  function renderDebug() {
+    const body = $('#swDebugBody');
+    if (!body) return;
+    $('#swDebugCount').textContent = dbg.entries.length + ' зап.';
+    body.innerHTML = dbg.entries.map((e) =>
+      `<div class="sw-debug__row"><b>[${e.at}] ${esc(e.label)}</b><pre>${esc(
+        typeof e.data === 'string' ? e.data : JSON.stringify(e.data, null, 2)
+      )}</pre></div>`).join('');
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function debugInit() {
+    if (!DEBUG) return;
+    const panel = document.createElement('div');
+    panel.className = 'sw-debug';
+    panel.innerHTML = `
+      <div class="sw-debug__bar">
+        <strong>DEBUG</strong>
+        <span id="swDebugCount">0 зап.</span>
+        <button type="button" id="swDebugDiag">Проверить СДЭК</button>
+        <button type="button" id="swDebugCopy">Скопировать всё</button>
+        <button type="button" id="swDebugClear">Очистить</button>
+        <button type="button" id="swDebugMin">Свернуть</button>
+      </div>
+      <div class="sw-debug__body" id="swDebugBody"></div>`;
+    document.body.appendChild(panel);
+    $('#swDebugDiag').addEventListener('click', runDiag);
+    $('#swDebugCopy').addEventListener('click', () => {
+      navigator.clipboard.writeText(debugText()).then(
+        () => toast('Лог скопирован — отправьте его разработчику'),
+        () => toast('Не удалось скопировать'));
+    });
+    $('#swDebugClear').addEventListener('click', () => { dbg.entries = []; renderDebug(); });
+    $('#swDebugMin').addEventListener('click', () => panel.classList.toggle('sw-debug--min'));
+    window.addEventListener('error', (e) =>
+      debugLog('JS-ОШИБКА', { message: e.message, source: `${e.filename}:${e.lineno}` }));
+    window.addEventListener('unhandledrejection', (e) =>
+      debugLog('PROMISE ОТКЛОНЁН', { reason: String(e.reason) }));
+    debugLog('debug-режим включён', { url: location.href, ua: navigator.userAgent });
+  }
+
+  // Единая обёртка над fetch: парсит ответ и в debug-режиме пишет в панель
+  // и сам запрос, и серверную трассу из заголовка X-Sw-Debug.
+  async function apiFetch(path, opts) {
+    const url = apiPath(path);
+    let res;
+    try {
+      res = await fetch(url, opts);
+    } catch (e) {
+      debugLog('СЕТЕВАЯ ОШИБКА → ' + path, { error: String(e) });
+      throw e;
+    }
+    const raw = await res.text();
+    let data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch { /* не JSON */ }
+    if (DEBUG) {
+      let trace = null;
+      const h = res.headers.get('X-Sw-Debug');
+      if (h) { try { trace = JSON.parse(h); } catch { /* игнор */ } }
+      debugLog((res.ok ? 'OK ' : 'ОШИБКА ') + res.status + ' → ' + path, {
+        status: res.status,
+        response: data !== null ? data : raw,
+        serverTrace: trace,
+      });
+    }
+    return { res, data };
+  }
+
+  async function runDiag() {
+    debugLog('Запуск самодиагностики СДЭК…', {});
+    try {
+      await apiFetch('cdek/diag');
+    } catch (e) {
+      debugLog('Диагностика не удалась', { error: String(e) });
+    }
+  }
 
   /* ---------- глобальные обработчики ---------- */
   function bindGlobal() {

@@ -5,10 +5,14 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/http.php';
+require_once __DIR__ . '/debug.php';
 
 // Тарифы СДЭК — отправка со склада/ПВЗ продавца.
 const SW_CDEK_TARIFF_PVZ  = 136; // склад-склад — выдача в ПВЗ
 const SW_CDEK_TARIFF_DOOR = 137; // склад-дверь — курьером до адреса
+
+// Срок жизни кэша списка городов — список меняется крайне редко.
+const SW_CDEK_CITIES_TTL = 2592000; // 30 дней
 
 // OAuth client_credentials token, cached to a file until it expires.
 function sw_cdek_token(): string
@@ -33,9 +37,25 @@ function sw_cdek_token(): string
     ]);
     $token = (string)($res['data']['access_token'] ?? '');
     if ($token === '') {
-        throw new RuntimeException('CDEK: не удалось получить токен авторизации');
+        // СДЭК отдаёт причину в error_description — пробрасываем её, чтобы
+        // было видно, дело в ключе (CDEK_ACCOUNT / CDEK_SECURE_PASSWORD)
+        // или в чём-то ещё.
+        $detail = $res['data']['error_description']
+            ?? $res['data']['error']
+            ?? $res['data']['message']
+            ?? ('HTTP ' . $res['status']);
+        sw_debug_add('cdek.oauth.fail', [
+            'status'  => $res['status'],
+            'account' => $cfg['account'],
+            'detail'  => $detail,
+        ]);
+        throw new RuntimeException(
+            'CDEK OAuth: ' . $detail
+            . ' — проверьте CDEK_ACCOUNT / CDEK_SECURE_PASSWORD в .env'
+        );
     }
     $expiresIn = (int)($res['data']['expires_in'] ?? 3600);
+    sw_debug_add('cdek.oauth.ok', ['expiresIn' => $expiresIn]);
     @file_put_contents($cacheFile, json_encode([
         'value'     => $token,
         'expiresAt' => time() + $expiresIn - 60,
@@ -78,9 +98,30 @@ function sw_cdek_api(string $path, array $opts = [])
     return $res['data'];
 }
 
-// Подсказка городов по названию.
+// Подсказка городов по названию. Результат по каждому запросу кэшируется в
+// data/.cdek-cities.json. В обычном режиме отдаётся из кэша; при ?debug=1
+// кэш игнорируется и перезаписывается свежим ответом СДЭК.
 function sw_cdek_search_cities(string $query): array
 {
+    $cacheFile = __DIR__ . '/../../data/.cdek-cities.json';
+    $key = mb_strtolower(trim($query));
+
+    $cache = [];
+    if (is_file($cacheFile)) {
+        $decoded = json_decode((string)file_get_contents($cacheFile), true);
+        if (is_array($decoded)) {
+            $cache = $decoded;
+        }
+    }
+
+    $entry = $cache[$key] ?? null;
+    $fresh = is_array($entry) && (time() - (int)($entry['at'] ?? 0)) < SW_CDEK_CITIES_TTL;
+    if ($fresh && !sw_debug_enabled()) {
+        sw_debug_add('cdek.cities.cache-hit', ['query' => $key]);
+        return is_array($entry['cities'] ?? null) ? $entry['cities'] : [];
+    }
+
+    // Официальный endpoint СДЭК API v2 — список населённых пунктов.
     $list = sw_cdek_api('/location/cities', [
         'query' => ['city' => $query, 'country_codes' => 'RU', 'size' => 12],
     ]);
@@ -94,6 +135,10 @@ function sw_cdek_search_cities(string $query): array
             'postalCode' => $city['postal_code'] ?? null,
         ];
     }
+
+    $cache[$key] = ['at' => time(), 'cities' => $out];
+    @file_put_contents($cacheFile, json_encode($cache, JSON_UNESCAPED_UNICODE), LOCK_EX);
+    sw_debug_add('cdek.cities.fetched', ['query' => $key, 'count' => count($out)]);
     return $out;
 }
 

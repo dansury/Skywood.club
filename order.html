@@ -35,8 +35,33 @@
   const params = new URLSearchParams(location.search);
   const orderId = params.get('order') || '';
   const demo = params.get('demo') === '1';
+  const debug = params.get('debug') === '1';
   const fail = params.get('status') === 'fail' || location.pathname.includes('/fail');
   const $ = (id) => document.getElementById(id);
+
+  function showDebug(title, res, data) {
+    let panel = document.querySelector('.sw-debug');
+    if (!panel) {
+      panel = document.createElement('div');
+      panel.className = 'sw-debug';
+      panel.innerHTML = '<div class="sw-debug__bar"><strong>DEBUG</strong>'
+        + '<button type="button" id="dbgCopy">Скопировать</button></div>'
+        + '<div class="sw-debug__body"><div class="sw-debug__row">'
+        + '<b></b><pre></pre></div></div>';
+      document.body.appendChild(panel);
+    }
+    let trace = null;
+    if (res) { try { trace = JSON.parse(res.headers.get('X-Sw-Debug') || 'null'); } catch {} }
+    const text = JSON.stringify({
+      url: location.href,
+      status: res ? res.status : 'сетевая ошибка',
+      response: data,
+      serverTrace: trace,
+    }, null, 2);
+    panel.querySelector('b').textContent = title;
+    panel.querySelector('pre').textContent = text;
+    $('dbgCopy').onclick = () => navigator.clipboard.writeText(text);
+  }
   if (orderId) $('orderId').textContent = 'Заказ № ' + orderId;
 
   const set = (icon, title, text) => {
@@ -52,7 +77,15 @@
 
   let order = null;
   if (orderId) {
-    try { order = await fetch('api/orders/' + encodeURIComponent(orderId)).then((r) => r.ok ? r.json() : null); } catch {}
+    const url = 'api/orders/' + encodeURIComponent(orderId) + (debug ? '?debug=1' : '');
+    try {
+      const res = await fetch(url);
+      const data = await res.json().catch(() => null);
+      if (debug) showDebug('GET api/orders/' + orderId, res, data);
+      if (res.ok) order = data;
+    } catch (e) {
+      if (debug) showDebug('GET api/orders/' + orderId, null, { error: String(e) });
+    }
   }
 
   if (demo) {
