@@ -24,6 +24,7 @@
       "packWidth": 20,
       "packHeight": 20,
       "images": ["hammock-1.jpg", "hammock-2.jpg", "hammock-3.jpg", "hammock-4.jpg", "hammock-5.jpg", "hammock-6.jpg"],
+      "video": "haventent.mp4",
       "features": [
         {
           "title": "Спать можно как угодно",
@@ -75,6 +76,7 @@
       "packWidth": 20,
       "packHeight": 20,
       "images": ["jet-1.jpg", "jet-2.jpg", "jet-3.jpg", "jet-4.jpg", "jet-5.jpg", "jet-6.jpg"],
+      "video": "skywoodjet.mp4",
       "features": [
         {
           "title": "Фиксация за три стропы",

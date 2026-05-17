@@ -112,6 +112,7 @@
       <button class="modal__close" data-close>✕</button>
       <div class="pm">
         <div class="pm__gallery">
+          ${p.video ? `<video class="pm__video" autoplay muted loop playsinline controls preload="auto"><source src="assets/video/${p.video}" type="video/mp4"></video>` : ''}
           <div class="pm__main"><img src="assets/img/${p.images[0]}" alt="${p.name}" id="pmMain"></div>
           <div class="pm__thumbs">${p.images.map((im, i) =>
             `<img src="assets/img/${im}" data-i="${i}" class="${i === 0 ? 'active' : ''}" alt="">`).join('')}</div>

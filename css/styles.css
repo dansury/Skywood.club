@@ -354,6 +354,7 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
 /* — модалка товара — */
 .pm{display:grid;grid-template-columns:1fr 1fr}
 .pm__gallery{background:var(--bg)}
+.pm__video{width:100%;max-width:100%;aspect-ratio:16/9;margin-bottom:12px;border-radius:var(--radius);overflow:hidden}
 .pm__main{aspect-ratio:1;overflow:hidden}
 .pm__main img{width:100%;height:100%;object-fit:cover}
 .pm__thumbs{display:flex;gap:8px;padding:12px;flex-wrap:wrap}
