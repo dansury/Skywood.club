@@ -49,9 +49,10 @@ as `text/plain`.
 `api/lib/debug.php`: `sw_debug_enabled()`, `sw_debug_add(tag,data)` (append to a
 per-request trace), `sw_debug_dump()`, `sw_debug_mask()` (hides secrets).
 `lib/http.php` traces every cURL call; `cdek.php` traces OAuth. When enabled:
-PHP `display_errors` is on; `sw_json` emits the trace in response header
-`X-Sw-Debug` (ASCII JSON) and, for object responses, as a `_debug` key;
-the top-level `catch` records the exception (class, message, location, trace).
+`sw_debug_install_handlers()` routes PHP warnings/notices/fatals into the trace
+(never printed — that would corrupt the JSON); `sw_json` emits the trace in
+response header `X-Sw-Debug` (ASCII JSON) and, for object responses, as a
+`_debug` key; the top-level `catch` records the exception.
 
 ## Files — api/
 

@@ -29,7 +29,8 @@ function sw_http_request(string $method, string $url, array $opts = []): array
     $errno = curl_errno($ch);
     $errstr = curl_error($ch);
     $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
+    // curl_close() удалён намеренно — он deprecated с PHP 8.5 и не нужен с 8.0
+    // (хэндл освобождается сборщиком мусора).
 
     sw_debug_add('http', [
         'method'   => $method,
