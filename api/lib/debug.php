@@ -46,3 +46,29 @@ function sw_debug_mask(string $text): string
         $text
     );
 }
+
+// In debug mode, route PHP warnings/notices/deprecations into the trace
+// instead of the output stream — printing them would corrupt the JSON body.
+function sw_debug_install_handlers(): void
+{
+    if (!sw_debug_enabled()) {
+        return;
+    }
+    set_error_handler(function (int $no, string $msg, string $file, int $line): bool {
+        sw_debug_add('php-error', [
+            'level'   => $no,
+            'message' => $msg,
+            'where'   => basename($file) . ':' . $line,
+        ]);
+        return true; // не передаём дальше — в поток ничего не печатается
+    });
+    register_shutdown_function(function (): void {
+        $e = error_get_last();
+        if ($e && ($e['type'] & (E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR))) {
+            sw_debug_add('php-fatal', [
+                'message' => $e['message'],
+                'where'   => basename($e['file']) . ':' . $e['line'],
+            ]);
+        }
+    });
+}
