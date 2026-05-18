@@ -95,10 +95,13 @@
     art.innerHTML = `
       <div class="product__media">
         <img src="assets/img/${p.images[0]}" alt="${p.name}" loading="lazy">
-        ${p.video ? `<video class="product__video" muted loop playsinline preload="none" aria-hidden="true"
+        ${p.video ? `<video class="product__video" muted loop playsinline controls preload="none"
           poster="assets/img/${p.images[0]}" data-src="assets/video/${p.video}"></video>` : ''}
         ${p.badge ? `<span class="product__badge ${p.oldPrice ? 'product__badge--sale' : ''}">${p.badge}</span>` : ''}
         ${p.available ? '' : '<div class="product__soldout">Под заказ</div>'}
+        ${frames.length > 1 ? `
+        <button class="gallery-arrow gallery-arrow--prev" type="button" aria-label="Предыдущий кадр">‹</button>
+        <button class="gallery-arrow gallery-arrow--next" type="button" aria-label="Следующий кадр">›</button>` : ''}
         <div class="product__dots">${frames.map((f, i) =>
           `<button data-i="${i}" class="${i === 0 ? 'active' : ''}" aria-label="${f.type === 'video' ? 'Видео' : 'Фото ' + (i + 1)}"></button>`).join('')}</div>
       </div>
@@ -153,8 +156,8 @@
     return art;
   }
 
-  /* Навигация по галерее карточки: свайп на тач-устройствах,
-     перелистывание по позиции курсора при наведении на десктопе. */
+  /* Навигация по галерее карточки: полукруглые стрелки влево/вправо
+     поверх медиа (с зацикливанием) и свайп на тач-устройствах. */
   function bindGalleryNav(media, frames, setImage, getIdx) {
     // Предзагрузка фото-кадров (видео грузится отдельно после загрузки страницы).
     frames.forEach((f, i) => {
@@ -176,11 +179,15 @@
       setImage(getIdx() + (dx < 0 ? 1 : -1));
     }, { passive: true });
 
-    media.addEventListener('mousemove', (e) => {
-      const r = media.getBoundingClientRect();
-      setImage(Math.floor(((e.clientX - r.left) / r.width) * frames.length));
+    const step = (dir) => setImage((getIdx() + dir + frames.length) % frames.length);
+    media.querySelector('.gallery-arrow--prev')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      step(-1);
     });
-    media.addEventListener('mouseleave', () => setImage(0));
+    media.querySelector('.gallery-arrow--next')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      step(1);
+    });
   }
 
   /* ---------- модалка товара ---------- */
