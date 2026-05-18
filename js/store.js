@@ -52,6 +52,20 @@
     renderCart();
     if (DEMO) showDemoBar();
     bindGlobal();
+    if (document.readyState === 'complete') loadProductVideos();
+    else window.addEventListener('load', loadProductVideos, { once: true });
+  }
+
+  // Видео карточек грузим лениво — сразу после полной загрузки страницы,
+  // чтобы не конкурировать с критичными ресурсами, но быть готовыми к
+  // моменту, когда пользователь начнёт листать галерею.
+  function loadProductVideos() {
+    $$('.product__video[data-src]').forEach((v) => {
+      v.preload = 'auto';
+      v.src = v.dataset.src;
+      v.removeAttribute('data-src');
+      v.load();
+    });
   }
 
   function showDemoBar() {
@@ -83,8 +97,8 @@
     art.innerHTML = `
       <div class="product__media">
         <img src="assets/img/${p.images[0]}" alt="${p.name}" loading="lazy">
-        ${p.video ? `<video class="product__video" muted loop playsinline controls preload="auto"
-          poster="assets/img/${p.images[0]}" src="assets/video/${p.video}"></video>` : ''}
+        ${p.video ? `<video class="product__video" muted loop playsinline controls preload="none"
+          poster="assets/img/${p.images[0]}" data-src="assets/video/${p.video}"></video>` : ''}
         ${p.badge ? `<span class="product__badge ${p.oldPrice ? 'product__badge--sale' : ''}">${p.badge}</span>` : ''}
         ${p.available ? '' : '<div class="product__soldout">Под заказ</div>'}
         ${frames.length > 1 ? `
@@ -119,6 +133,10 @@
       curIdx = idx;
       const f = frames[idx];
       if (f.type === 'video') {
+        if (!video.src && video.dataset.src) {
+          video.src = video.dataset.src;
+          video.removeAttribute('data-src');
+        }
         video.classList.add('show');
         video.play().catch(() => {});
       } else {
