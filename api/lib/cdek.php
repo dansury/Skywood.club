@@ -121,18 +121,31 @@ function sw_cdek_search_cities(string $query): array
         return is_array($entry['cities'] ?? null) ? $entry['cities'] : [];
     }
 
-    // Официальный endpoint СДЭК API v2 — список населённых пунктов.
-    $list = sw_cdek_api('/location/cities', [
-        'query' => ['city' => $query, 'country_codes' => 'RU', 'size' => 12],
+    // Официальный endpoint СДЭК API v2 — подбор населённого пункта по
+    // частично введённому названию (для автокомплита).
+    $list = sw_cdek_api('/location/suggest/cities', [
+        'query' => ['name' => $query, 'country_code' => 'RU'],
     ]);
     $out = [];
     foreach ((is_array($list) ? $list : []) as $city) {
+        if (empty($city['code'])) {
+            continue; // без кода СДЭК город непригоден для расчёта/заказа
+        }
+        // full_name — «Город, Регион, Страна»: первая часть — название города.
+        $full = trim((string)($city['full_name'] ?? ''));
+        $name = $full;
+        $region = '';
+        $comma = mb_strpos($full, ',');
+        if ($comma !== false) {
+            $name = trim(mb_substr($full, 0, $comma));
+            $region = trim(mb_substr($full, $comma + 1));
+        }
         $out[] = [
-            'code'       => $city['code'] ?? null,
-            'city'       => $city['city'] ?? '',
-            'region'     => $city['region'] ?? '',
-            'fias'       => $city['fias_guid'] ?? null,
-            'postalCode' => $city['postal_code'] ?? null,
+            'code'       => $city['code'],
+            'city'       => $name,
+            'region'     => $region,
+            'fias'       => $city['city_uuid'] ?? null,
+            'postalCode' => null,
         ];
     }
 
