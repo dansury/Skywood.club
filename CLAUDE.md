@@ -19,8 +19,6 @@ For any new feature or non-trivial change:
 2. Update that spec to describe the planned change (signatures, flows,
    configs) — before writing any code.
 3. Implement code to match the updated spec.
-4. Log changes in `/changelog/changes-{date}-{time}.md`. The file is
-   sufficient — no need to report in dialog.
 
 Pure bug fixes may skip step 2; update the spec afterwards if it was
 inaccurate. Specs describe actual functionality only — never changelogs
@@ -28,7 +26,7 @@ or version history.
 
 ## Conventions
 
-- `spec.md`, `/spec/*.md`, `/changelog/*.md`, `README.md` — in English.
+- `spec.md`, `/spec/*.md`, `README.md` — in English.
 - No filler in specs: facts only — names, types, values, relations.
 - Don't bloat `api/index.php`. New functionality goes into new files
   (`api/lib/*`); additions go where the feature lives.
