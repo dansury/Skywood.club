@@ -10,6 +10,7 @@ require_once __DIR__ . '/lib/catalog.php';
 require_once __DIR__ . '/lib/store.php';
 require_once __DIR__ . '/lib/cdek.php';
 require_once __DIR__ . '/lib/tinkoff.php';
+require_once __DIR__ . '/lib/mail.php';
 
 // В debug-режиме (?debug=1) собираем PHP-ошибки в трассу запроса. В поток их
 // не печатаем — иначе они ломают JSON-ответ; в обычном режиме они скрыты.
@@ -106,12 +107,17 @@ function sw_validate_order(array $body): array
         if (is_array($colors) && count($colors) > 0) {
             $color = in_array($row['color'] ?? null, $colors, true) ? $row['color'] : $colors[0];
         }
+        // Stock-tracked variant short on units → preorder (allowed, flagged),
+        // never blocked. Untracked variants (stock === null) ship normally.
+        $stock = sw_catalog_stock($product['id'], $color);
+        $preorder = $stock !== null && $stock < $qty;
         $items[] = [
             'id'          => $product['id'],
             'name'        => $product['name'],
             'price'       => $product['price'],
             'qty'         => $qty,
             'color'       => $color,
+            'preorder'    => $preorder,
             'weightGrams' => $product['weightGrams'] ?? 1000,
             'packLength'  => $product['packLength'] ?? 0,
             'packWidth'   => $product['packWidth'] ?? 0,
@@ -153,10 +159,26 @@ function sw_validate_order(array $body): array
     $paymentMethod = ($body['paymentMethod'] ?? '') === 'cod' ? 'cod' : 'online';
     $deliveryCost = max(0, (int)round((float)($d['cost'] ?? 0)));
 
+    // Personal-data consent (152-ФЗ) is mandatory to place an order.
+    $consent = !empty($body['consent']);
+    if (!$consent) {
+        $errors[] = 'Подтвердите согласие на обработку персональных данных';
+    }
+
+    $isPreorder = false;
+    foreach ($items as $it) {
+        if (!empty($it['preorder'])) {
+            $isPreorder = true;
+            break;
+        }
+    }
+
     return [
         'errors'        => $errors,
         'items'         => $items,
         'customer'      => $customer,
+        'consent'       => $consent,
+        'preorder'      => $isPreorder,
         'paymentMethod' => $paymentMethod,
         'deliveryCost'  => $deliveryCost,
         'deliveryType'  => $deliveryType,
@@ -268,6 +290,8 @@ try {
         $order = sw_order_create([
             'items'         => $v['items'],
             'customer'      => $v['customer'],
+            'consent'       => $v['consent'],
+            'preorder'      => $v['preorder'],
             'deliveryType'  => $v['deliveryType'],
             'toCityCode'    => $v['toCityCode'],
             'cityName'      => $v['cityName'],
@@ -294,16 +318,22 @@ try {
             $cdek = ['status' => 'demo'];
         }
 
-        // Оплата при получении — заказ сразу подтверждён.
+        // Письмо клиенту и уведомление владельцу — при оформлении любого заказа
+        // (обычного или предзаказа). Best-effort, ошибки почты заказ не ломают.
+        sw_mail_order($order, !empty($v['preorder']));
+
+        // Оплата при получении — заказ сразу подтверждён, остатки списываем.
         if ($v['paymentMethod'] === 'cod') {
-            sw_order_update($order['id'], ['cdek' => $cdek, 'status' => 'confirmed']);
-            sw_json(['ok' => true, 'orderId' => $order['id'], 'redirect' => 'order.html?order=' . rawurlencode($order['id']) . '&status=success']);
+            sw_inventory_apply_order($order);
+            sw_order_update($order['id'], ['cdek' => $cdek, 'status' => 'confirmed', 'stockApplied' => true]);
+            sw_json(['ok' => true, 'orderId' => $order['id'], 'preorder' => !empty($v['preorder']), 'redirect' => 'order.html?order=' . rawurlencode($order['id']) . '&status=success']);
         }
 
-        // Демо-режим без доступов Т-Банк.
+        // Демо-режим без доступов Т-Банк — считаем заказ оформленным, остатки списываем.
         if (!$cfg['tinkoff']['enabled']) {
-            sw_order_update($order['id'], ['cdek' => $cdek, 'payment' => ['status' => 'demo']]);
-            sw_json(['ok' => true, 'orderId' => $order['id'], 'redirect' => 'order.html?order=' . rawurlencode($order['id']) . '&status=success&demo=1']);
+            sw_inventory_apply_order($order);
+            sw_order_update($order['id'], ['cdek' => $cdek, 'payment' => ['status' => 'demo'], 'stockApplied' => true]);
+            sw_json(['ok' => true, 'orderId' => $order['id'], 'preorder' => !empty($v['preorder']), 'redirect' => 'order.html?order=' . rawurlencode($order['id']) . '&status=success&demo=1']);
         }
 
         // Онлайн-оплата картой через Т-Банк.
@@ -341,14 +371,20 @@ try {
         $order = sw_order_get((string)($body['OrderId'] ?? ''));
         if ($order !== null) {
             $paid = ($body['Status'] ?? '') === 'CONFIRMED' || ($body['Status'] ?? '') === 'AUTHORIZED';
-            sw_order_update($order['id'], [
+            $patch = [
                 'status'  => $paid ? 'paid' : $order['status'],
                 'payment' => array_merge(is_array($order['payment'] ?? null) ? $order['payment'] : [], [
                     'status'    => $body['Status'] ?? null,
                     'paymentId' => $body['PaymentId'] ?? null,
                     'updatedAt' => date('c'),
                 ]),
-            ]);
+            ];
+            // Списываем остатки один раз, когда оплата подтверждена.
+            if ($paid && empty($order['stockApplied'])) {
+                sw_inventory_apply_order($order);
+                $patch['stockApplied'] = true;
+            }
+            sw_order_update($order['id'], $patch);
         }
         // Т-Банк ожидает ответ "OK".
         sw_text('OK');
@@ -396,6 +432,51 @@ try {
             sw_json($report, 502);
         }
         sw_json($report, 200);
+    }
+
+    // POST /api/lead — захват контакта (форма обратной связи). Сохраняется в БД,
+    // владельцу уходит уведомление. {name?,phone?,email?,message?,source?}.
+    if ($route === 'lead' && $method === 'POST') {
+        $body = sw_request_body();
+        $name = trim((string)($body['name'] ?? ''));
+        $phone = trim((string)($body['phone'] ?? ''));
+        $email = trim((string)($body['email'] ?? ''));
+        $message = trim((string)($body['message'] ?? ''));
+        if ($name === '' && $phone === '' && $email === '') {
+            sw_json(['error' => 'Укажите телефон или e-mail'], 400);
+        }
+        $id = sw_lead_create([
+            'source'  => 'contact',
+            'name'    => $name,
+            'phone'   => $phone,
+            'email'   => $email,
+            'message' => $message,
+        ]);
+        $cfg = sw_mail_config();
+        sw_mail_send($cfg['admin'], 'Новый контакт с сайта Skywood',
+            "Имя: {$name}\nТелефон: {$phone}\nE-mail: {$email}\nСообщение: {$message}");
+        sw_json(['ok' => true, 'id' => $id]);
+    }
+
+    // POST /api/replain — вебхук Re:plain. Сохраняет сообщения/контакты клиентов
+    // как лиды, чтобы они были видны в админке. Формат события Re:plain кладём
+    // в raw; вытаскиваем имя/контакты/текст «по возможности».
+    if ($route === 'replain' && $method === 'POST') {
+        $body = sw_request_body();
+        $visitor = is_array($body['visitor'] ?? null) ? $body['visitor'] : [];
+        $msg = $body['message'] ?? ($body['text'] ?? '');
+        if (is_array($msg)) {
+            $msg = $msg['text'] ?? json_encode($msg, JSON_UNESCAPED_UNICODE);
+        }
+        sw_lead_create([
+            'source'  => 'replain',
+            'name'    => trim((string)($visitor['name'] ?? ($body['name'] ?? ''))),
+            'phone'   => trim((string)($visitor['phone'] ?? ($body['phone'] ?? ''))),
+            'email'   => trim((string)($visitor['email'] ?? ($body['email'] ?? ''))),
+            'message' => (string)$msg,
+            'raw'     => $body,
+        ]);
+        sw_text('OK');
     }
 
     sw_json(['error' => 'Маршрут не найден'], 404);

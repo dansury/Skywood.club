@@ -1,0 +1,44 @@
+# spec/admin.md
+
+Admin panel and the data it manages. URL: `/admin` (rewrite to `admin.php`).
+
+## admin.php
+
+Session login. Password from `.env` `ADMIN_PASS` (fallback to legacy lowercase
+`adminpass`, then `"adminpass"`); optional `ADMIN_LOGIN` adds a username field.
+CSRF token per session; `noindex`. Mutations require auth + valid CSRF and a
+working DB (`sw_db_available()`), else a flash warning.
+
+Tabs:
+- **Товары и остатки** — per product: price override (placeholder = base price
+  from products.json), old price, availability checkbox, discount
+  (percent + `discount_starts`/`discount_ends` as `datetime-local`), and a
+  stock input per colour (`stock[<colour>]`; empty = untracked, 0 = preorder).
+  Saved via `sw_db_product_ext_save()` + `sw_db_stock_set()`.
+- **Заказы** — table from `data/orders.json` (newest first): id, date, customer,
+  items, delivery, payment, total, status; preorder badge.
+- **Клиенты** — aggregated from orders (by email/phone) + leads: contacts,
+  order count, total spent, last activity, source.
+- **Лиды / Re:plain** — `sw_leads_all()`: contact-form captures and Re:plain
+  webhook events. Shows the Re:plain webhook URL to configure (`<baseUrl>/api/replain`).
+
+`settings.php` is a legacy minimal price/availability editor that writes
+`products.json` directly; `admin.php` is the primary panel and edits the DB
+overlay instead.
+
+## Data store
+
+SQLite `data/skywood.sqlite` (`api/lib/db.php`). Created on first use, not in
+git (survives `pull.php`). Degrades gracefully when `pdo_sqlite` is absent — the
+storefront still runs off `products.json` (no stock tracking, no overrides).
+
+## E-mail
+
+`api/lib/mail.php` sends order/preorder confirmations to the customer (signed by
+Яна, phone +7 977 508-45-85) and a notification to `ADMIN_EMAIL`. Templates are
+documented in `/emails.md`. Sending is best-effort via PHP `mail()`.
+
+## .env keys (optional)
+
+`ADMIN_PASS`, `ADMIN_LOGIN`, `ADMIN_EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME`,
+`MAIL_ENABLED`. All have safe defaults (company email / legacy `adminpass`).

@@ -12,11 +12,24 @@ The repository root is the web root on the hosting (e.g.
 - `css/`, `js/`, `assets/` — static assets.
 - `api/` — PHP backend (`spec/backend.md`).
 - `data/` — `products.json` (catalog) + runtime `orders.json`,
-  `.cdek-token.json`, `.installed`. `data/.htaccess` denies web access.
+  `skywood.sqlite` (DB), `.cdek-token.json`, `.installed`. `data/.htaccess`
+  denies web access.
 - `.env` — credentials. `.htaccess` denies web access.
-- `.htaccess` — `DirectoryIndex`, mod_rewrite (`api/.+` → `api/index.php`),
-  deny rules for `.env` / `pull-config.php` / `*.log` / `*.md`.
+- `.htaccess` — `DirectoryIndex`, 301 redirects from the old WordPress URLs,
+  `/admin` → `admin.php`, mod_rewrite (`api/.+` → `api/index.php`), deny rules
+  for `.env` / `pull-config.php` / `*.log` / `*.md`.
+- `robots.txt`, `sitemap.xml` — SEO.
 - `install.php` — installer.
+
+## SEO
+
+- `.htaccess` 301-redirects the old WordPress paths
+  `/гамаки/гамак-палатка-skywood/` and `/подвесные-палатки/skywoodjet/` to `/`
+  (with a percent-encoded fallback) to preserve search positions.
+- `robots.txt` allows the site, blocks `/admin`, `/api/`, `/data/`, service PHP,
+  and points to `sitemap.xml`.
+- `index.html` / `privacy.html` carry `canonical`, Open Graph and `Store` JSON-LD.
+- Full audit + remaining recommendations: `SEOrecommend.md` (claude-seo method).
 
 ## pull.php — update from GitHub
 
