@@ -1,6 +1,9 @@
 .env
 .env.local
 data/orders.json
+data/skywood.sqlite
+data/skywood.sqlite-wal
+data/skywood.sqlite-shm
 data/.cdek-token.json
 data/.cdek-cities.json
 data/.installed

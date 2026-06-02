@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin.php
+Disallow: /admin
+Disallow: /api/
+Disallow: /data/
+Disallow: /pull.php
+Disallow: /settings.php
+
+Sitemap: https://skywood.club/sitemap.xml

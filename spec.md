@@ -8,15 +8,18 @@ HTML-фронтенд + PHP-бэкенд. Работает на обычном P
 
 | Area | Files | Spec |
 |---|---|---|
-| Фронтенд (лендинг, корзина, чекаут) | `index.html`, `order.html`, `css/*`, `js/*` | `spec/frontend.md` |
+| Фронтенд (лендинг, корзина, чекаут) | `index.html`, `order.html`, `privacy.html`, `css/*`, `js/*` | `spec/frontend.md` |
 | Бэкенд (PHP API) | `api/index.php`, `api/lib/*.php` | `spec/backend.md` |
 | Платежи и доставка | `api/lib/tinkoff.php`, `api/lib/cdek.php` | `spec/integrations.md` |
-| Деплой на хостинг | `pull.php`, `pull-config.php`, `install.php`, `.htaccess` | `spec/deploy.md` |
+| Админка (товары/остатки/скидки, заказы, клиенты, лиды) | `admin.php`, `api/lib/db.php`, `api/lib/mail.php` | `spec/admin.md` |
+| Деплой и SEO | `pull.php`, `pull-config.php`, `.htaccess`, `robots.txt`, `sitemap.xml` | `spec/deploy.md` |
 
 ## Catalog
 
-Товары — `data/products.json`. Заказы — `data/orders.json` (создаётся при
-первом заказе, в git не хранится).
+Текст и фото товаров — `data/products.json`. Изменяемые данные (остатки по
+вариантам, переопределения цен, скидки, лиды) — SQLite-БД `data/skywood.sqlite`
+(`api/lib/db.php`). Заказы — `data/orders.json`. Все `data/*` создаются в рантайме
+и не хранятся в git.
 
 ## Rules
 
@@ -26,11 +29,16 @@ HTML-фронтенд + PHP-бэкенд. Работает на обычном P
 
 ## File list
 
-- `index.html` — лендинг; `order.html` — статус заказа.
+- `index.html` — лендинг; `order.html` — статус заказа; `privacy.html` —
+  политика конфиденциальности (152-ФЗ).
 - `css/styles.css`, `js/store.js` (каталог/корзина/чекаут),
-  `js/main.js` (параллакс/анимации).
-- `api/index.php` — PHP-роутер API; `api/lib/*.php` — модули.
-- `install.php` — установщик/проверка хостинга.
-- `.env` — доступы; `data/products.json` — каталог.
+  `js/main.js` (параллакс/анимации), `js/cookies.js` (cookie-баннер).
+- `api/index.php` — PHP-роутер API; `api/lib/*.php` — модули
+  (`db.php` — SQLite, `mail.php` — письма).
+- `admin.php` — админка (`/admin`): остатки, цены, скидки, заказы, клиенты, лиды.
+- `emails.md` — шаблоны писем; `SEOrecommend.md` — SEO-аудит и рекомендации.
+- `robots.txt`, `sitemap.xml` — для поисковиков.
+- `settings.php` — устаревшая мини-панель цен/наличия (правит products.json).
+- `.env` — доступы; `data/products.json` — каталог; `data/skywood.sqlite` — БД.
 - `pull.php`, `pull-config.php` — обновление сайта на хостинге из GitHub.
 - `1/*.mht` — архив старого сайта.

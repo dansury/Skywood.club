@@ -25,6 +25,26 @@
   const saveCart = () => localStorage.setItem('sw_cart', JSON.stringify(cart));
   const product = (id) => PRODUCTS.find((p) => p.id === id);
 
+  // Профиль покупателя: сохраняем введённые данные, чтобы подставить их в
+  // следующий раз (требует согласия на cookies — баннер в js/cookies.js).
+  function loadProfile() {
+    try { return JSON.parse(localStorage.getItem('sw_profile') || '{}') || {}; }
+    catch { return {}; }
+  }
+  function saveProfile() {
+    try {
+      localStorage.setItem('sw_profile', JSON.stringify({
+        customer: ck.customer,
+        city: ck.city,
+        deliveryType: ck.deliveryType,
+      }));
+    } catch { /* приватный режим — игнорируем */ }
+  }
+  // Любая корзина с хотя бы одной позицией без остатка — предзаказ.
+  const cartHasPreorder = () =>
+    cartLines().some((l) => l.p.preorder || (l.p.stockByColor &&
+      (l.p.stockByColor[l.color] || 0) < l.qty));
+
   /* ---------- тост ---------- */
   let toastTimer;
   function toast(msg) {
@@ -98,6 +118,7 @@
         ${p.video ? `<video class="product__video" muted loop playsinline controls preload="none"
           poster="assets/img/${p.images[0]}" data-src="assets/video/${p.video}"></video>` : ''}
         ${p.badge ? `<span class="product__badge ${p.oldPrice ? 'product__badge--sale' : ''}">${p.badge}</span>` : ''}
+        ${p.preorder ? '<span class="product__badge product__badge--sale">Предзаказ</span>' : ''}
         ${p.available ? '' : '<div class="product__soldout">Под заказ</div>'}
         ${frames.length > 1 ? `
         <button class="gallery-arrow gallery-arrow--prev" type="button" aria-label="Предыдущий кадр">‹</button>
@@ -117,7 +138,7 @@
         </div>
         <div class="product__actions">
           <button class="btn btn--ghost btn--sm" data-act="details">Подробнее</button>
-          <button class="btn btn--primary btn--sm" data-act="buy">В корзину</button>
+          <button class="btn btn--primary btn--sm" data-act="buy">${p.preorder ? 'Предзаказ' : 'В корзину'}</button>
         </div>
       </div>`;
     const media = $('.product__media', art);
@@ -222,7 +243,7 @@
             <b>${money(p.price)}</b>
             ${p.oldPrice ? `<del>${money(p.oldPrice)}</del>` : ''}
           </div>
-          <button class="btn btn--primary btn--block" id="pmBuy">В корзину</button>
+          <button class="btn btn--primary btn--block" id="pmBuy">${p.preorder ? 'Оформить предзаказ' : 'В корзину'}</button>
         </div>
       </div>`;
     const mainImg = $('#pmMain', box);
@@ -365,11 +386,18 @@
     points: [],
     delivery: null,
     payment: 'online',
+    consent: false,
     busy: false,
   };
 
   function openCheckout() {
     if (!cartLines().length) return;
+    // Подставляем ранее введённые данные.
+    const prof = loadProfile();
+    if (prof.customer) ck.customer = { ...ck.customer, ...prof.customer };
+    if (prof.city) ck.city = prof.city;
+    if (prof.deliveryType) ck.deliveryType = prof.deliveryType;
+    ck.consent = false;
     ck.step = 1;
     closeCart();
     renderCheckout();
@@ -423,6 +451,7 @@
       c.comment = $('#ckComment').value.trim();
       if (c.name.length < 2) return toast('Укажите имя получателя');
       if (!/^\+?[0-9\s\-()]{10,18}$/.test(c.phone)) return toast('Укажите корректный телефон');
+      saveProfile();
       ck.step = 2;
       renderCheckout();
     });
@@ -505,6 +534,7 @@
       ck.city = list._cities[b.dataset.i];
       cityInput.value = ck.city.city;
       list.classList.remove('show');
+      saveProfile();
       loadPoints();
       recalcDelivery();
     });
@@ -522,7 +552,8 @@
       ck.pvz = ck.points.find((p) => p.code === pvzSel.value) || null;
     });
 
-    if (ck.city) loadPoints();
+    // Восстановленный из профиля город — подгружаем ПВЗ и пересчитываем доставку.
+    if (ck.city) { loadPoints(); recalcDelivery(); }
 
     $('#ckBack').addEventListener('click', () => { ck.step = 1; renderCheckout(); });
     $('#ckNext').addEventListener('click', () => {
@@ -533,6 +564,7 @@
         if (ck.customer.address.length < 5) return toast('Укажите адрес доставки');
       }
       if (!ck.delivery) return toast('Дождитесь расчёта стоимости доставки');
+      saveProfile();
       ck.step = 3;
       renderCheckout();
     });
@@ -587,10 +619,18 @@
   function stepPayment() {
     const sub = cartTotal();
     const deliv = ck.delivery ? ck.delivery.cost : 0;
+    const preorder = cartHasPreorder();
     const lines = cartLines().map((l) =>
       `<div class="row"><span>${l.p.name}${l.color ? ', ' + l.color : ''} × ${l.qty}</span>
        <span>${money(l.p.price * l.qty)}</span></div>`).join('');
-    return `
+    const submitLabel = preorder ? 'Оформить предзаказ'
+      : (ck.payment === 'online' ? 'Перейти к оплате' : 'Подтвердить заказ');
+    const preorderNote = preorder
+      ? `<div class="hint" style="background:#fff7e8;border:1px solid #f0d9a8;color:#8a5a00;padding:10px 12px;border-radius:10px;margin-bottom:12px">
+           Часть товаров сейчас нет в наличии — оформляем предзаказ. Мы свяжемся с вами,
+           как только палатки поступят на склад (обычно 1–3 недели).</div>`
+      : '';
+    return preorderNote + `
       <div class="field"><label>Способ оплаты</label>
         <div class="choice" id="payChoice">
           <label class="${ck.payment === 'online' ? 'sel' : ''}">
@@ -608,10 +648,15 @@
         <div class="row"><span>Доставка СДЭК</span><span>${money(deliv)}</span></div>
         <div class="row row--total"><span>Итого</span><span>${money(sub + deliv)}</span></div>
       </div>
+      <label class="ck__consent" style="display:flex;gap:9px;align-items:flex-start;margin:14px 0 4px;font-size:.85rem;color:var(--muted);cursor:pointer">
+        <input type="checkbox" id="ckConsent" ${ck.consent ? 'checked' : ''} style="margin-top:3px;flex:none">
+        <span>Я согласен(на) на обработку персональных данных в соответствии с
+          <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">политикой конфиденциальности</a>.</span>
+      </label>
       <div id="ckSubmitErr"></div>
       <div class="ck__nav">
         <button class="btn btn--ghost" id="ckBack">Назад</button>
-        <button class="btn btn--primary" id="ckSubmit">${ck.payment === 'online' ? 'Перейти к оплате' : 'Подтвердить заказ'}</button>
+        <button class="btn btn--primary" id="ckSubmit">${submitLabel}</button>
       </div>`;
   }
 
@@ -620,18 +665,23 @@
       ck.payment = e.target.value;
       renderCheckout();
     });
+    $('#ckConsent').addEventListener('change', (e) => { ck.consent = e.target.checked; });
     $('#ckBack').addEventListener('click', () => { ck.step = 2; renderCheckout(); });
     $('#ckSubmit').addEventListener('click', submitOrder);
   }
 
   async function submitOrder() {
     if (ck.busy) return;
+    const errBox = $('#ckSubmitErr');
+    errBox.innerHTML = '';
+    if (!ck.consent) {
+      errBox.innerHTML = `<div class="ck__err">Подтвердите согласие на обработку персональных данных</div>`;
+      return;
+    }
     ck.busy = true;
     const btn = $('#ckSubmit');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span>';
-    const errBox = $('#ckSubmitErr');
-    errBox.innerHTML = '';
     try {
       const { data: res } = await apiFetch('orders', {
         method: 'POST',
@@ -648,6 +698,7 @@
             cost: ck.delivery?.cost || 0,
           },
           paymentMethod: ck.payment,
+          consent: ck.consent,
         }),
       });
 
@@ -661,22 +712,27 @@
 
       if (res.paymentUrl) { window.location.href = res.paymentUrl; return; }
       if (res.redirect) { window.location.href = res.redirect; return; }
-      showOrderDone(res.orderId);
+      showOrderDone(res.orderId, res.preorder);
     } catch (e) {
       errBox.innerHTML = `<div class="ck__err">${esc(e.message)}</div>`;
       btn.disabled = false;
-      btn.textContent = ck.payment === 'online' ? 'Перейти к оплате' : 'Подтвердить заказ';
+      btn.textContent = cartHasPreorder() ? 'Оформить предзаказ'
+        : (ck.payment === 'online' ? 'Перейти к оплате' : 'Подтвердить заказ');
     } finally {
       ck.busy = false;
     }
   }
 
-  function showOrderDone(id) {
+  function showOrderDone(id, preorder) {
+    const title = preorder ? `Предзаказ ${esc(id || '')} оформлен` : `Заказ ${esc(id || '')} принят`;
+    const text = preorder
+      ? 'Спасибо! Мы свяжемся с вами, как только палатки поступят на склад. Письмо с деталями отправлено на ваш e-mail.'
+      : 'Мы свяжемся с вами для подтверждения. Спасибо, что выбрали Skywood!';
     $('#checkoutBox').innerHTML = `<button class="modal__close" data-close>✕</button>
       <div class="ck"><div class="ck__ok">
         <div class="big">🌲</div>
-        <h3>Заказ ${esc(id || '')} принят</h3>
-        <p style="color:var(--muted);margin-top:8px">Мы свяжемся с вами для подтверждения. Спасибо, что выбрали Skywood!</p>
+        <h3>${title}</h3>
+        <p style="color:var(--muted);margin-top:8px">${text}</p>
         <button class="btn btn--primary btn--block" data-close style="margin-top:20px">Готово</button>
       </div></div>`;
   }

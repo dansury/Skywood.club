@@ -6,6 +6,18 @@ DirectoryIndex index.html
 <IfModule mod_rewrite.c>
   RewriteEngine On
 
+  # --- 301 redirects from the old WordPress URLs (keep search positions) ---
+  # Old: /гамаки/гамак-палатка-skywood/ and /подвесные-палатки/skywoodjet/
+  RewriteRule "^гамаки/гамак-палатка-skywood/?$" / [R=301,L]
+  RewriteRule "^подвесные-палатки/skywoodjet/?$" / [R=301,L]
+  # Fallback for hosts that match the percent-encoded path instead of decoding it.
+  RewriteCond %{REQUEST_URI} %D0%B3%D0%B0%D0%BC%D0%B0%D0%BA-%D0%BF%D0%B0%D0%BB%D0%B0%D1%82%D0%BA%D0%B0-skywood [NC,OR]
+  RewriteCond %{REQUEST_URI} skywoodjet [NC]
+  RewriteRule ^ / [R=301,L]
+
+  # Pretty admin URL: /admin → admin.php
+  RewriteRule ^admin/?$ admin.php [QSA,L]
+
   # Route /api/* to the PHP front controller (everything else served as files).
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
