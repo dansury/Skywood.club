@@ -9,3 +9,6 @@ data/.cdek-cities.json
 data/.installed
 *.log
 .DS_Store
+
+# Grafify knowledge graph output (build locally with /graphify .)
+graphify-out/
