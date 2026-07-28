@@ -10,6 +10,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/preorder.php';
 
 // Reads optional mail settings from .env (see sw_config for the rest):
 //   MAIL_FROM   — From address (default info@skywood.club)
@@ -171,4 +172,72 @@ function sw_mail_order(array $order, bool $preorder = false): array
         sw_mail_admin_body($order)
     );
     return ['customer' => $customerOk, 'admin' => $adminOk];
+}
+
+/* ---------- «Узнать о поступлении» ---------- */
+
+// One preorder request rendered for the owner. $pre is the record built by
+// sw_preorder_validate() (api/lib/preorder.php).
+function sw_mail_preorder_admin_body(array $pre): string
+{
+    $product = (string)($pre['productName'] ?? '');
+    $color = trim((string)($pre['color'] ?? ''));
+    $method = SW_PREORDER_METHODS[$pre['contactMethod'] ?? ''] ?? (string)($pre['contactMethod'] ?? '');
+    $lines = [
+        'Заявка «Узнать о поступлении».',
+        '',
+        'Товар: ' . $product . ($color !== '' ? ', ' . $color : ''),
+        'Ожидаемое поступление: ' . (string)($pre['readyLabel'] ?? ''),
+        'Имя: ' . (string)($pre['name'] ?? ''),
+        'Способ связи: ' . $method . ' — ' . (string)($pre['contact'] ?? ''),
+    ];
+    if (trim((string)($pre['address'] ?? '')) !== '') {
+        $lines[] = 'Адрес: ' . $pre['address'];
+    }
+    if (trim((string)($pre['comment'] ?? '')) !== '') {
+        $lines[] = 'Комментарий: ' . $pre['comment'];
+    }
+    $lines[] = '';
+    $lines[] = 'Заявка сохранена в админке — вкладка «Узнать о поступлении».';
+    return implode("\n", $lines);
+}
+
+function sw_mail_preorder_body(array $pre): string
+{
+    $name = trim((string)($pre['name'] ?? '')) ?: 'друг';
+    $product = (string)($pre['productName'] ?? '');
+    $color = trim((string)($pre['color'] ?? ''));
+    $label = (string)($pre['readyLabel'] ?? '');
+    return "Здравствуйте, {$name}!\n\n"
+        . "Спасибо за интерес к Skywood — мы записали вас в лист ожидания.\n\n"
+        . 'Товар: ' . $product . ($color !== '' ? ', ' . $color : '') . "\n"
+        . "Ждём новую партию: {$label}\n\n"
+        . "Как только палатки приедут на склад, я напишу вам первой волной — "
+        . "до того, как они появятся в открытой продаже. Если сроки сдвинутся, "
+        . "предупрежу заранее.\n\n"
+        . "Ничего оплачивать сейчас не нужно, и от записи всегда можно отказаться — "
+        . "просто ответьте на это письмо."
+        . sw_mail_signature();
+}
+
+// Notifies the owner at the address configured in the admin (setting
+// `preorder_email`) and confirms to the customer when they left an e-mail.
+// Best-effort: returns ['owner'=>bool,'customer'=>bool].
+function sw_mail_preorder(array $pre): array
+{
+    $product = (string)($pre['productName'] ?? '');
+    $ownerOk = sw_mail_send(
+        sw_preorder_email(),
+        'Узнать о поступлении: ' . ($product !== '' ? $product : 'товар'),
+        sw_mail_preorder_admin_body($pre)
+    );
+    $customerOk = false;
+    if (($pre['contactMethod'] ?? '') === 'email') {
+        $customerOk = sw_mail_send(
+            (string)($pre['contact'] ?? ''),
+            'Сообщим о поступлении — Skywood',
+            sw_mail_preorder_body($pre)
+        );
+    }
+    return ['owner' => $ownerOk, 'customer' => $customerOk];
 }

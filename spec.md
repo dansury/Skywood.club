@@ -11,7 +11,7 @@ HTML-фронтенд + PHP-бэкенд. Работает на обычном P
 | Фронтенд (лендинг, корзина, чекаут) | `index.html`, `order.html`, `privacy.html`, `css/*`, `js/*` | `spec/frontend.md` |
 | Бэкенд (PHP API) | `api/index.php`, `api/lib/*.php` | `spec/backend.md` |
 | Платежи и доставка | `api/lib/tinkoff.php`, `api/lib/cdek.php` | `spec/integrations.md` |
-| Админка (товары/остатки/скидки, заказы, клиенты, лиды) | `admin.php`, `api/lib/db.php`, `api/lib/mail.php` | `spec/admin.md` |
+| Админка (товары/остатки/скидки, заказы, клиенты, лиды, предзаказы) | `admin.php`, `api/lib/db.php`, `api/lib/mail.php`, `api/lib/preorder.php` | `spec/admin.md` |
 | Деплой и SEO | `pull.php`, `pull-config.php`, `.htaccess`, `robots.txt`, `sitemap.xml` | `spec/deploy.md` |
 
 ## Catalog
@@ -34,8 +34,10 @@ HTML-фронтенд + PHP-бэкенд. Работает на обычном P
 - `css/styles.css`, `js/store.js` (каталог/корзина/чекаут),
   `js/main.js` (параллакс/анимации), `js/cookies.js` (cookie-баннер).
 - `api/index.php` — PHP-роутер API; `api/lib/*.php` — модули
-  (`db.php` — SQLite, `mail.php` — письма).
-- `admin.php` — админка (`/admin`): остатки, цены, скидки, заказы, клиенты, лиды.
+  (`db.php` — SQLite, `mail.php` — письма, `preorder.php` — предзаказ
+  на следующий сезон).
+- `admin.php` — админка (`/admin`): остатки, цены, скидки, заказы, клиенты,
+  лиды, заявки «Узнать о поступлении».
 - `emails.md` — шаблоны писем; `SEOrecommend.md` — SEO-аудит и рекомендации.
 - `robots.txt`, `sitemap.xml` — для поисковиков.
 - `settings.php` — устаревшая мини-панель цен/наличия (правит products.json).

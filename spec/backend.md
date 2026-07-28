@@ -12,7 +12,7 @@ Base path `/api`. All responses JSON unless noted.
 ### GET /api/products
 → `{ products, company, demo }`. Each product carries the DB overlay (see
 *Product shape*): effective `price`, `oldPrice`, `available`, `discount`,
-`stockTotal`, `stockByColor`, `preorder`.
+`stockTotal`, `stockByColor`, `preorder`, `preorderOffer`.
 
 ### GET /api/cdek/cities?q=
 ≥2 chars → `[{code,city,region,fias,postalCode}]`. Demo fallback: static cities.
@@ -46,6 +46,26 @@ delivery{type,cityCode,cityName,pvzCode,pvzName,cost}, paymentMethod, consent}`.
   the order's `stockApplied` flag (idempotent). Untracked variants unaffected.
 - `redirect` is `order.html?order=<id>&status=success[&demo=1]` (relative,
   works in any subfolder). Responses also carry `preorder`.
+
+### POST /api/preorder
+Waitlist request for an out-of-stock product («Узнать о поступлении»). Collects
+a contact, does not create an order and never touches payment or delivery.
+
+`{productId, color?, name, contact, address?, comment?, consent}`
+- `productId` must resolve to a product whose `preorderOffer` is not null,
+  else → error (the product is in stock, or the offer is off for it/shop-wide).
+- `name` ≥ 2 chars.
+- `contact` — one free-form field (phone, Telegram nick or e-mail), ≥ 3 chars.
+  The channel is **derived**, not asked: `sw_preorder_detect_method()` returns
+  `email` (valid e-mail syntax), `telegram` (`@nick` or a `t.me/` link),
+  `phone` (`^\+?[0-9\s\-()]{10,18}$`) or `other` (stored as written). The only
+  rejected shape is an `other` value containing `@` — a mistyped e-mail.
+- `address`, `comment` — optional free text (trimmed, capped at 300/1000).
+- `consent` (152-ФЗ) is **required** — missing → error.
+- Stores the request in the DB (`preorders`), stamped with the product's
+  expected arrival date; notifies the owner and, when the contact is an e-mail,
+  confirms to the customer (`sw_mail_preorder()`). Mail is best-effort.
+→ `{ok:true, id, readyDate, readyLabel}`; `{errors:[…]}` 400 on validation.
 
 ### POST /api/lead
 `{name?,phone?,email?,message?}` → stores a lead in the DB and notifies the
@@ -91,14 +111,26 @@ response header `X-Sw-Debug` (ASCII JSON) and, for object responses, as a
   `sw_catalog_stock($id,$color)`, `sw_inventory_apply_order($order)` (decrement).
 - `lib/db.php` — SQLite (PDO) store; never throws on the public path (returns
   empty/neutral when `pdo_sqlite` missing). Tables `products_ext` (price,
-  old_price, available, discount_percent/starts/ends), `stock`
-  (product_id,color,qty), `leads`. Helpers `sw_db()`, `sw_db_available()`,
+  old_price, available, discount_percent/starts/ends, preorder_mode,
+  preorder_date), `stock` (product_id,color,qty), `leads`, `settings`
+  (name,value), `preorders`. Helpers `sw_db()`, `sw_db_available()`,
   `sw_db_products_ext()`, `sw_db_stock_*()`, `sw_db_product_ext_save()`,
-  `sw_discount_active()`, `sw_lead_create()`, `sw_leads_all()`.
+  `sw_discount_active()`, `sw_lead_create()`, `sw_leads_all()`,
+  `sw_settings()`, `sw_setting()`, `sw_setting_set()`, `sw_preorder_create()`,
+  `sw_preorders_all()`. `sw_db_migrate()` also back-fills columns added later
+  via `sw_db_add_column()`, so existing databases upgrade in place.
+- `lib/preorder.php` — next-season preorder offer and requests.
+  `SW_PREORDER_METHODS` (contact-channel labels), `sw_preorder_detect_method()`,
+  `SW_PREORDER_DEFAULTS`
+  (`preorder_enabled=1`, `preorder_date=2027-03-01`,
+  `preorder_email=Dansury@gmail.com`), `sw_preorder_settings()`,
+  `sw_preorder_offer($ext)` → `{date,label}|null`, `sw_date_label_ru()`,
+  `sw_preorder_submit($body)`.
 - `lib/mail.php` — `sw_mail_order($order,$preorder)` (customer + owner),
-  `sw_mail_send()`; templates mirror `/emails.md`, signed by Яна. Uses PHP
-  `mail()`; reads `MAIL_FROM`, `MAIL_FROM_NAME`, `ADMIN_EMAIL`, `MAIL_ENABLED`
-  from `.env`.
+  `sw_mail_preorder($request)` (owner at `preorder_email` + customer when the
+  contact is an e-mail), `sw_mail_send()`; templates mirror `/emails.md`,
+  signed by Яна. Uses PHP `mail()`; reads `MAIL_FROM`, `MAIL_FROM_NAME`,
+  `ADMIN_EMAIL`, `MAIL_ENABLED` from `.env`.
 - `lib/store.php` — order store in `data/orders.json`:
   `sw_order_create/get/update`, `sw_order_next_id` (`SW<YYYYMMDD>-<NNN>`).
 - `lib/tinkoff.php`, `lib/cdek.php` — see `spec/integrations.md`.
@@ -120,3 +152,10 @@ Added by the DB overlay in `sw_catalog_all()`:
 - `stockTotal` — units across colours, or `null` when stock is untracked.
 - `stockByColor` — `{colour:units}` when tracked, else `null`.
 - `preorder` — `true` when stock is tracked and totals zero.
+- `preorderOffer` — `{date:'YYYY-MM-DD', label:'1 марта 2027'}` while the
+  product is out of stock (`preorder` is true), else `null`. The offer needs no
+  per-product switch: it follows the stock. Only the date is configurable,
+  resolved from `products_ext.preorder_mode`: `off` → null (never offered);
+  `custom` → `preorder_date` of the product; anything else → the shop-wide
+  `preorder_date` setting. Always null when the shop-wide `preorder_enabled`
+  setting is off or the date is empty.

@@ -140,6 +140,9 @@
           <button class="btn btn--ghost btn--sm" data-act="details">Подробнее</button>
           <button class="btn btn--primary btn--sm" data-act="buy">${p.preorder ? 'Предзаказ' : 'В корзину'}</button>
         </div>
+        ${p.preorderOffer ? `
+        <button class="btn btn--ghost btn--sm product__notify" data-act="notify">Узнать о поступлении</button>
+        <div class="product__eta">Следующая партия — ${esc(p.preorderOffer.label)}</div>` : ''}
       </div>`;
     const media = $('.product__media', art);
     const img = $('img', media);
@@ -174,6 +177,7 @@
     $('[data-act="buy"]', art).addEventListener('click', () => {
       addToCart(p.id);
     });
+    $('[data-act="notify"]', art)?.addEventListener('click', () => openPreorder(p.id));
     return art;
   }
 
@@ -244,6 +248,9 @@
             ${p.oldPrice ? `<del>${money(p.oldPrice)}</del>` : ''}
           </div>
           <button class="btn btn--primary btn--block" id="pmBuy">${p.preorder ? 'Оформить предзаказ' : 'В корзину'}</button>
+          ${p.preorderOffer ? `
+          <button class="btn btn--ghost btn--block" id="pmNotify">Узнать о поступлении</button>
+          <div class="product__eta">Следующая партия — ${esc(p.preorderOffer.label)}</div>` : ''}
         </div>
       </div>`;
     const mainImg = $('#pmMain', box);
@@ -300,7 +307,122 @@
     box.addEventListener('keydown', handleKeyboard);
 
     $('#pmBuy', box).addEventListener('click', () => { addToCart(p.id); closeModal('#productModal'); });
+    $('#pmNotify', box)?.addEventListener('click', () => {
+      closeModal('#productModal');
+      openPreorder(p.id);
+    });
     openModal('#productModal');
+  }
+
+  /* ---------- предзаказ: «Узнать о поступлении» ---------- */
+  // Заявка на следующую партию: контакт вместо заказа — без оплаты и доставки.
+  const pre = { id: '', color: '', busy: false };
+
+  function openPreorder(id, color) {
+    const p = product(id);
+    if (!p || !p.preorderOffer) return;
+    pre.id = id;
+    pre.color = color || (p.options?.color?.[0] || '');
+    pre.busy = false;
+    renderPreorder();
+    openModal('#preorderModal');
+  }
+
+  function renderPreorder() {
+    const p = product(pre.id);
+    const prof = loadProfile().customer || {};
+    const colors = p.options?.color || [];
+    $('#preorderBox').innerHTML = `<button class="modal__close" data-close>✕</button>
+      <div class="ck">
+        <div class="ck__head">
+          <h3>Узнать о поступлении</h3>
+          <p>${esc(p.name)} — следующая партия ${esc(p.preorderOffer.label)}</p>
+        </div>
+        <p class="hint" style="margin:-12px 0 18px">Оставьте контакты — напишем сразу,
+          как палатки приедут на склад. Ничего оплачивать сейчас не нужно.</p>
+        <div class="field"><label>Как к вам обращаться *</label>
+          <input id="preName" value="${esc(prof.name || '')}" placeholder="Иван"></div>
+        ${colors.length > 1 ? `
+        <div class="field"><label>Цвет</label>
+          <select id="preColor">${colors.map((c) =>
+            `<option value="${esc(c)}" ${c === pre.color ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>` : ''}
+        <div class="field"><label>Как с вами связаться *</label>
+          <input id="preContact" placeholder="Телефон, Telegram или e-mail">
+          <div class="hint">Как вам удобнее: +7 999 000-00-00, @nickname или you@example.com</div></div>
+        <div class="field"><label>Адрес доставки — необязательно</label>
+          <input id="preAddr" value="${esc(prof.address || '')}" placeholder="Город, улица, дом"></div>
+        <div class="field"><label>Комментарий</label>
+          <textarea id="preComment" placeholder="Необязательно"></textarea></div>
+        <label class="ck__consent" style="display:flex;gap:9px;align-items:flex-start;margin:14px 0 4px;font-size:.85rem;color:var(--muted);cursor:pointer">
+          <input type="checkbox" id="preConsent" style="margin-top:3px;flex:none">
+          <span>Я согласен(на) на обработку персональных данных в соответствии с
+            <a href="privacy.html" target="_blank" rel="noopener" style="color:var(--accent)">политикой конфиденциальности</a>.</span>
+        </label>
+        <div id="preErr"></div>
+        <div class="ck__nav">
+          <button class="btn btn--ghost" data-close>Отмена</button>
+          <button class="btn btn--primary" id="preSubmit">Сообщите мне</button>
+        </div>
+      </div>`;
+    bindPreorder();
+  }
+
+  function bindPreorder() {
+    $('#preColor')?.addEventListener('change', (e) => { pre.color = e.target.value; });
+    $('#preSubmit').addEventListener('click', submitPreorder);
+  }
+
+  async function submitPreorder() {
+    if (pre.busy) return;
+    const errBox = $('#preErr');
+    const fail = (msg) => { errBox.innerHTML = `<div class="ck__err">${esc(msg)}</div>`; };
+    errBox.innerHTML = '';
+
+    const body = {
+      productId: pre.id,
+      color: pre.color,
+      name: $('#preName').value.trim(),
+      contact: $('#preContact').value.trim(),
+      address: $('#preAddr').value.trim(),
+      comment: $('#preComment').value.trim(),
+      consent: $('#preConsent').checked,
+    };
+    if (body.name.length < 2) return fail('Укажите, как к вам обращаться');
+    if (body.contact.length < 3) return fail('Укажите телефон, Telegram или e-mail');
+    if (!body.consent) return fail('Подтвердите согласие на обработку персональных данных');
+
+    pre.busy = true;
+    const btn = $('#preSubmit');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+    try {
+      const { data: res } = await apiFetch('preorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res) throw new Error('Пустой ответ сервера');
+      if (res.errors) throw new Error(res.errors.join('. '));
+      if (res.error) throw new Error(res.error);
+      showPreorderDone(res.readyLabel);
+    } catch (e) {
+      fail(e.message);
+      btn.disabled = false;
+      btn.textContent = 'Сообщите мне';
+    } finally {
+      pre.busy = false;
+    }
+  }
+
+  function showPreorderDone(label) {
+    $('#preorderBox').innerHTML = `<button class="modal__close" data-close>✕</button>
+      <div class="ck"><div class="ck__ok">
+        <div class="big">🌲</div>
+        <h3>Записали вас в лист ожидания</h3>
+        <p style="color:var(--muted);margin-top:8px">Ждём партию${label ? ' ' + esc(label) : ''} —
+          сообщим вам первыми, как только палатки приедут на склад.</p>
+        <button class="btn btn--primary btn--block" data-close style="margin-top:20px">Готово</button>
+      </div></div>`;
   }
 
   /* ---------- корзина ---------- */
@@ -854,12 +976,14 @@
       if (e.target.closest('[data-close]')) {
         closeModal('#productModal');
         closeModal('#checkoutModal');
+        closeModal('#preorderModal');
       }
     });
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
         closeModal('#productModal');
         closeModal('#checkoutModal');
+        closeModal('#preorderModal');
         closeCart();
       }
     });
