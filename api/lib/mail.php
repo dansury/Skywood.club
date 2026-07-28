@@ -23,7 +23,7 @@ function sw_mail_config(): array
     if ($cfg !== null) {
         return $cfg;
     }
-    $env = sw_load_env(__DIR__ . '/../../.env');
+    $env = sw_load_env(sw_env_path());
     $get = function ($k, $d = '') use ($env) {
         $v = $env[$k] ?? getenv($k);
         return ($v === false || $v === null || $v === '') ? $d : (string)$v;

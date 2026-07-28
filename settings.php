@@ -1,22 +1,10 @@
 <?php
 require_once __DIR__ . '/api/lib/config.php';
 
-$env = [];
-$envFile = __DIR__ . '/.env';
-if (is_file($envFile)) {
-    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-    foreach ($lines as $line) {
-        $line = trim($line);
-        if ($line === '' || $line[0] === '#') continue;
-        $eq = strpos($line, '=');
-        if ($eq === false) continue;
-        $key = trim(substr($line, 0, $eq));
-        $val = trim(substr($line, $eq + 1));
-        if ($key !== '') $env[$key] = $val;
-    }
-}
+$env = sw_load_env(sw_env_path());
 
-$adminPass = $env['ADMIN_PASS'] ?? 'adminpass';
+// Accept ADMIN_PASS, then the legacy lowercase `adminpass`, then a safe default.
+$adminPass = $env['ADMIN_PASS'] ?? $env['adminpass'] ?? 'adminpass';
 $authenticated = false;
 $message = '';
 $products = [];

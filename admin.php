@@ -1,5 +1,5 @@
 <?php
-// Skywood admin — /admin. Login (ADMIN_PASS in .env), then manage stock,
+// Skywood admin — /admin. Login (ADMIN_PASS in ../.env), then manage stock,
 // prices, discounts and view orders, customers and leads. All mutable data
 // lives in the SQLite DB (api/lib/db.php); the catalog text stays in
 // data/products.json.
@@ -14,7 +14,7 @@ require_once __DIR__ . '/api/lib/preorder.php';
 
 session_start();
 
-$env = sw_load_env(__DIR__ . '/.env');
+$env = sw_load_env(sw_env_path());
 // Accept ADMIN_PASS, then the legacy lowercase `adminpass`, then a safe default.
 $adminPass = $env['ADMIN_PASS'] ?? $env['adminpass'] ?? 'adminpass';
 $adminLogin = $env['ADMIN_LOGIN'] ?? '';

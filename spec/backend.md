@@ -1,6 +1,7 @@
 # spec/backend.md
 
-PHP backend in `api/`. Runs on shared PHP hosting (PHP 7.x+). Reads `.env` and
+PHP backend in `api/`. Runs on shared PHP hosting (PHP 7.x+). Reads the `.env`
+one level above the web root (see `sw_env_path()` in `lib/config.php`) and
 `data/products.json`; stores orders in `data/orders.json`; overlays mutable shop
 data (stock, price/discount overrides, leads) from the SQLite DB
 `data/skywood.sqlite` (`lib/db.php`).
@@ -102,7 +103,10 @@ response header `X-Sw-Debug` (ASCII JSON) and, for object responses, as a
   → JSON `{error}` 500. Helpers `sw_json`, `sw_text`, `sw_request_body`,
   `sw_validate_order`, `sw_resolve_items`.
 - `lib/debug.php` — debug-mode helpers (see *Debug mode*).
-- `lib/config.php` — `sw_load_env()` parses `.env`; `sw_config()` builds the
+- `lib/config.php` — `sw_root_dir()` returns the web root; `sw_env_path()`
+  resolves the credentials file (first existing of `<root>/../.env` then the
+  legacy `<root>/.env`; defaults to the former when neither exists);
+  `sw_load_env()` parses it; `sw_config()` builds the
   config array (`baseUrl`, `tinkoff{}`, `cdek{}`, `company{}`, `demo`);
   `sw_detect_base_url()` derives the public URL from the request.
 - `lib/http.php` — `sw_http_request/sw_http_json` — cURL wrapper.
@@ -130,7 +134,7 @@ response header `X-Sw-Debug` (ASCII JSON) and, for object responses, as a
   `sw_mail_preorder($request)` (owner at `preorder_email` + customer when the
   contact is an e-mail), `sw_mail_send()`; templates mirror `/emails.md`,
   signed by Яна. Uses PHP `mail()`; reads `MAIL_FROM`, `MAIL_FROM_NAME`,
-  `ADMIN_EMAIL`, `MAIL_ENABLED` from `.env`.
+  `ADMIN_EMAIL`, `MAIL_ENABLED` via `sw_env_path()`.
 - `lib/store.php` — order store in `data/orders.json`:
   `sw_order_create/get/update`, `sw_order_next_id` (`SW<YYYYMMDD>-<NNN>`).
 - `lib/tinkoff.php`, `lib/cdek.php` — see `spec/integrations.md`.

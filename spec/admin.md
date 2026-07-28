@@ -4,8 +4,9 @@ Admin panel and the data it manages. URL: `/admin` (rewrite to `admin.php`).
 
 ## admin.php
 
-Session login. Password from `.env` `ADMIN_PASS` (fallback to legacy lowercase
-`adminpass`, then `"adminpass"`); optional `ADMIN_LOGIN` adds a username field.
+Session login. Password from the `.env` (`sw_env_path()`) key `ADMIN_PASS`
+(fallback to legacy lowercase `adminpass`, then `"adminpass"`); optional
+`ADMIN_LOGIN` adds a username field.
 CSRF token per session; `noindex`. Mutations require auth + valid CSRF and a
 working DB (`sw_db_available()`), else a flash warning.
 
@@ -35,7 +36,8 @@ Requests also feed the **Клиенты** tab (source `поступление`).
 
 `settings.php` is a legacy minimal price/availability editor that writes
 `products.json` directly; `admin.php` is the primary panel and edits the DB
-overlay instead.
+overlay instead. It shares the same env loading (`sw_load_env(sw_env_path())`)
+and the same password fallback chain.
 
 ## Data store
 
@@ -55,3 +57,4 @@ documented in `/emails.md`. Sending is best-effort via PHP `mail()`.
 
 `ADMIN_PASS`, `ADMIN_LOGIN`, `ADMIN_EMAIL`, `MAIL_FROM`, `MAIL_FROM_NAME`,
 `MAIL_ENABLED`. All have safe defaults (company email / legacy `adminpass`).
+The file itself lives one level above the web root — see `spec/deploy.md`.

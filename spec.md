@@ -41,6 +41,8 @@ HTML-фронтенд + PHP-бэкенд. Работает на обычном P
 - `emails.md` — шаблоны писем; `SEOrecommend.md` — SEO-аудит и рекомендации.
 - `robots.txt`, `sitemap.xml` — для поисковиков.
 - `settings.php` — устаревшая мини-панель цен/наличия (правит products.json).
-- `.env` — доступы; `data/products.json` — каталог; `data/skywood.sqlite` — БД.
+- `../.env` — доступы (на уровень выше корня сайта, вне `public_html`);
+  `.env.example` — шаблон без секретов; `data/products.json` — каталог;
+  `data/skywood.sqlite` — БД.
 - `pull.php`, `pull-config.php` — обновление сайта на хостинге из GitHub.
 - `1/*.mht` — архив старого сайта.
