@@ -15,6 +15,10 @@ Placeholders use `{{name}}` syntax and are filled per order:
 | `{{delivery}}`     | Delivery line (СДЭК + city/PVZ + cost)     |
 | `{{total}}`        | Grand total                                |
 | `{{payment}}`      | Payment method, human-readable             |
+| `{{product}}`      | Product name (+ colour) of a preorder request |
+| `{{ready_date}}`   | Expected arrival, e.g. `1 марта 2027`      |
+| `{{contact_method}}` | Preferred channel: Телефон / WhatsApp / Telegram / E-mail |
+| `{{contact}}`      | The contact itself (phone, nick or e-mail) |
 
 Signature appended to every customer email:
 
@@ -99,3 +103,51 @@ Internal copy, not signed. Sent to `ADMIN_EMAIL`.
 Итого: {{total}}
 Комментарий: {{comment}}
 ```
+
+---
+
+## 4. Next-season preorder (`preorder_request`) — to customer
+
+Sent when a visitor leaves a «Узнать о поступлении» request **and** picked
+`E-mail` as the preferred contact channel. No order and no payment involved.
+
+**Subject:** `Сообщим о поступлении — Skywood`
+
+```
+Здравствуйте, {{customer_name}}!
+
+Спасибо за интерес к Skywood — мы записали вас в лист ожидания.
+
+Товар: {{product}}
+Ждём новую партию: {{ready_date}}
+
+Как только палатки приедут на склад, я напишу вам первой волной — до того, как
+они появятся в открытой продаже. Если сроки сдвинутся, предупрежу заранее.
+
+Ничего оплачивать сейчас не нужно, и от записи всегда можно отказаться —
+просто ответьте на это письмо.
+```
+
+---
+
+## 5. Preorder-request notification (`preorder_admin`) — to shop owner
+
+Internal copy, not signed. Sent to the `preorder_email` setting from the admin
+panel (ships as `Dansury@gmail.com`), **not** to `ADMIN_EMAIL`.
+
+**Subject:** `Узнать о поступлении: {{product}}`
+
+```
+Заявка «Узнать о поступлении».
+
+Товар: {{product}}
+Ожидаемое поступление: {{ready_date}}
+Имя: {{customer_name}}
+Способ связи: {{contact_method}} — {{contact}}
+Адрес: {{address}}
+Комментарий: {{comment}}
+
+Заявка сохранена в админке — вкладка «Узнать о поступлении».
+```
+
+`Адрес` and `Комментарий` lines are omitted when empty.

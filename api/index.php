@@ -11,6 +11,7 @@ require_once __DIR__ . '/lib/store.php';
 require_once __DIR__ . '/lib/cdek.php';
 require_once __DIR__ . '/lib/tinkoff.php';
 require_once __DIR__ . '/lib/mail.php';
+require_once __DIR__ . '/lib/preorder.php';
 
 // В debug-режиме (?debug=1) собираем PHP-ошибки в трассу запроса. В поток их
 // не печатаем — иначе они ломают JSON-ответ; в обычном режиме они скрыты.
@@ -432,6 +433,21 @@ try {
             sw_json($report, 502);
         }
         sw_json($report, 200);
+    }
+
+    // POST /api/preorder — заявка «Узнать о поступлении»: контакт клиента,
+    // который ждёт следующую партию. Заказ не создаётся, оплата не нужна.
+    if ($route === 'preorder' && $method === 'POST') {
+        $result = sw_preorder_submit(sw_request_body());
+        if (!empty($result['errors'])) {
+            sw_json(['errors' => $result['errors']], 400);
+        }
+        sw_json([
+            'ok'         => true,
+            'id'         => $result['id'],
+            'readyDate'  => $result['readyDate'],
+            'readyLabel' => $result['readyLabel'],
+        ]);
     }
 
     // POST /api/lead — захват контакта (форма обратной связи). Сохраняется в БД,

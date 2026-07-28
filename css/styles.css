@@ -217,6 +217,9 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
   background:rgba(232,168,87,.14);padding:4px 10px;border-radius:8px}
 .product__actions{display:flex;gap:10px}
 .product__actions .btn{flex:1}
+/* предзаказ на следующий сезон — кнопка и подпись под карточкой */
+.product__notify{width:100%;margin-top:10px}
+.product__eta{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
 
 /* ===================== ПАРАЛЛАКС-БЛОК ===================== */
 .parallax{position:relative;min-height:80vh;display:flex;align-items:center;
@@ -370,7 +373,8 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
 .cart__total strong{font-family:'Unbounded',sans-serif;font-size:1.5rem}
 
 /* ===================== МОДАЛКИ ===================== */
-.modal{position:fixed;inset:0;z-index:80;display:none;align-items:center;
+/* z-index выше cookie-баннера (180) — иначе он перекрывает кнопки внизу модалки */
+.modal{position:fixed;inset:0;z-index:190;display:none;align-items:center;
   justify-content:center;padding:24px}
 .modal.open{display:flex}
 .modal__backdrop{position:absolute;inset:0;background:rgba(6,10,8,.8);
@@ -439,6 +443,10 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
 .choice label>span{display:flex;flex-direction:column;gap:3px}
 .choice .co-title{font-weight:700}
 .choice .co-sub{font-size:13px;color:var(--muted)}
+/* компактный ряд вариантов — способ связи в предзаказе */
+.choice--inline{flex-direction:row;flex-wrap:wrap}
+.choice--inline label{flex:1 1 calc(50% - 5px);align-items:center;padding:11px 14px;gap:9px}
+.choice--inline input{margin-top:0}
 .ac-list{max-height:210px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;
   margin-top:4px;display:none}
 .ac-list.show{display:block}

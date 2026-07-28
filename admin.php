@@ -10,6 +10,7 @@ require_once __DIR__ . '/api/lib/config.php';
 require_once __DIR__ . '/api/lib/db.php';
 require_once __DIR__ . '/api/lib/catalog.php';
 require_once __DIR__ . '/api/lib/store.php';
+require_once __DIR__ . '/api/lib/preorder.php';
 
 session_start();
 
@@ -68,6 +69,10 @@ if ($authed && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']))
             $v = trim((string)sw_admin_post($k, ''));
             return $v === '' ? null : (int)$v;
         };
+        $mode = (string)sw_admin_post('preorder_mode', 'default');
+        if (!in_array($mode, ['default', 'custom', 'off'], true)) {
+            $mode = 'default';
+        }
         sw_db_product_ext_save($pid, [
             'price'            => $num('price'),
             'old_price'        => $num('old_price'),
@@ -75,6 +80,8 @@ if ($authed && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']))
             'discount_percent' => (int)sw_admin_post('discount_percent', 0),
             'discount_starts'  => trim((string)sw_admin_post('discount_starts', '')) ?: null,
             'discount_ends'    => trim((string)sw_admin_post('discount_ends', '')) ?: null,
+            'preorder_mode'    => $mode,
+            'preorder_date'    => trim((string)sw_admin_post('preorder_date', '')) ?: null,
         ]);
         $stock = $_POST['stock'] ?? [];
         if (is_array($stock)) {
@@ -83,6 +90,26 @@ if ($authed && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']))
             }
         }
         $flash = 'Сохранено: ' . $pid;
+    } elseif ($_POST['action'] === 'save_preorder') {
+        // Общие настройки предзаказа «Узнать о поступлении».
+        sw_setting_set('preorder_enabled', isset($_POST['preorder_enabled']) ? '1' : '0');
+        $date = trim((string)sw_admin_post('preorder_date', ''));
+        $email = trim((string)sw_admin_post('preorder_email', ''));
+        if ($date !== '' && strtotime($date) === false) {
+            $flash = 'Дата поступления указана неверно — сохранены остальные настройки';
+            $flashType = 'err';
+        } else {
+            sw_setting_set('preorder_date', $date);
+        }
+        if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $flash = 'E-mail для заявок указан неверно — сохранены остальные настройки';
+            $flashType = 'err';
+        } else {
+            sw_setting_set('preorder_email', $email);
+        }
+        if ($flash === '') {
+            $flash = 'Настройки предзаказа сохранены';
+        }
     }
 }
 
@@ -123,8 +150,10 @@ $tab = $_GET['tab'] ?? 'stock';
     padding:18px 20px; margin-bottom:18px; }
   .card h2 { margin:0 0 14px; font-size:1.05rem; }
   label { display:block; font-size:.82rem; color:#5a665c; margin:8px 0 3px; }
-  input[type=text], input[type=number], input[type=datetime-local], input[type=password] {
-    width:100%; padding:8px 10px; border:1px solid #ccd3cc; border-radius:7px; font-size:14px; }
+  input[type=text], input[type=number], input[type=datetime-local], input[type=date],
+  input[type=password], select {
+    width:100%; padding:8px 10px; border:1px solid #ccd3cc; border-radius:7px;
+    font-size:14px; background:#fff; }
   .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
   .row { display:flex; align-items:center; gap:8px; }
   button { background:var(--ink); color:#fff; border:0; padding:9px 18px; border-radius:8px;
@@ -182,10 +211,14 @@ $tab = $_GET['tab'] ?? 'stock';
     <a href="?tab=orders"  class="<?= $tab === 'orders' ? 'active' : '' ?>">Заказы</a>
     <a href="?tab=clients" class="<?= $tab === 'clients' ? 'active' : '' ?>">Клиенты</a>
     <a href="?tab=leads"   class="<?= $tab === 'leads' ? 'active' : '' ?>">Лиды / Re:plain</a>
+    <a href="?tab=preorder" class="<?= $tab === 'preorder' ? 'active' : '' ?>">Узнать о поступлении</a>
   </nav>
 
 <?php if ($tab === 'stock'):
     $products = sw_catalog_all();
+    $psettings = sw_preorder_settings();
+    $globalDate = trim((string)$psettings['preorder_date']);
+    $globalLabel = $globalDate !== '' ? sw_date_label_ru($globalDate) : 'не задана';
     foreach ($products as $p):
         $colors = $p['options']['color'] ?? [];
         if (!is_array($colors) || count($colors) === 0) { $colors = ['']; }
@@ -230,6 +263,24 @@ $tab = $_GET['tab'] ?? 'stock';
         <?php endforeach; ?>
       </div>
       <p class="muted">Пусто = остаток не отслеживается (товар всегда доступен). 0 = нет в наличии → предзаказ.</p>
+    </fieldset>
+    <fieldset>
+      <legend>Предзаказ «Узнать о поступлении»</legend>
+      <?php $pmode = (string)($ext['preorder_mode'] ?? 'default');
+            $offer = $p['preorderOffer'] ?? null; ?>
+      <div class="grid">
+        <div><label>Режим</label>
+          <select name="preorder_mode">
+            <option value="default" <?= $pmode === 'custom' || $pmode === 'off' ? '' : 'selected' ?>>Общая дата (<?= h($globalLabel) ?>)</option>
+            <option value="custom" <?= $pmode === 'custom' ? 'selected' : '' ?>>Своя дата</option>
+            <option value="off" <?= $pmode === 'off' ? 'selected' : '' ?>>Выключен</option>
+          </select></div>
+        <div><label>Своя дата поступления</label>
+          <input type="date" name="preorder_date" value="<?= h($ext['preorder_date'] ?? '') ?>"></div>
+      </div>
+      <p class="muted">Сейчас на витрине:
+        <?= $offer ? 'кнопка «Узнать о поступлении», ожидаем ' . h($offer['label']) : 'предзаказ не предлагается' ?>.
+        Своя дата учитывается только в режиме «Своя дата».</p>
     </fieldset>
     <button type="submit">Сохранить</button>
   </form>
@@ -282,6 +333,15 @@ $tab = $_GET['tab'] ?? 'stock';
         $k = strtolower(trim((string)$l['email'])) ?: preg_replace('~\D~', '', (string)$l['phone']);
         if ($k === '' || isset($clients[$k])) { continue; }
         $clients[$k] = ['name' => $l['name'], 'phone' => $l['phone'], 'email' => $l['email'], 'orders' => 0, 'sum' => 0, 'last' => $l['created_at'], 'source' => $l['source']];
+    }
+    // Заявки «Узнать о поступлении» — тоже контакты клиентов.
+    foreach (sw_preorders_all() as $r) {
+        $isMail = ($r['contact_method'] ?? '') === 'email';
+        $email = $isMail ? (string)$r['contact'] : '';
+        $phone = $isMail ? '' : (string)$r['contact'];
+        $k = strtolower(trim($email)) ?: preg_replace('~\D~', '', $phone) ?: strtolower(trim($phone));
+        if ($k === '' || isset($clients[$k])) { continue; }
+        $clients[$k] = ['name' => $r['name'], 'phone' => $phone, 'email' => $email, 'orders' => 0, 'sum' => 0, 'last' => $r['created_at'], 'source' => 'поступление'];
     } ?>
   <div class="card">
     <h2>Клиенты (<?= count($clients) ?>)</h2>
@@ -323,6 +383,53 @@ $tab = $_GET['tab'] ?? 'stock';
         </tr>
       <?php endforeach; ?>
       <?php if (!$leads): ?><tr><td colspan="5" class="muted">Пока нет записей.</td></tr><?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+
+<?php elseif ($tab === 'preorder'):
+    $ps = sw_preorder_settings();
+    $requests = sw_preorders_all(); ?>
+  <form class="card" method="post">
+    <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+    <input type="hidden" name="action" value="save_preorder">
+    <h2>Настройки предзаказа</h2>
+    <p class="muted">Кнопка «Узнать о поступлении» на карточке товара: клиент
+      оставляет контакты и ждёт следующую партию. Ничего не оплачивается.</p>
+    <div class="grid">
+      <div><label>Предлагать предзаказ</label>
+        <div class="row"><input type="checkbox" name="preorder_enabled"
+          <?= ($ps['preorder_enabled'] ?? '1') === '1' ? 'checked' : '' ?>>
+          <span class="muted">показывать кнопку на сайте</span></div></div>
+      <div><label>Дата поступления по умолчанию</label>
+        <input type="date" name="preorder_date" value="<?= h($ps['preorder_date'] ?? '') ?>"></div>
+      <div><label>Куда присылать заявки</label>
+        <input type="text" name="preorder_email" value="<?= h($ps['preorder_email'] ?? '') ?>"
+          placeholder="<?= h(SW_PREORDER_DEFAULTS['preorder_email']) ?>"></div>
+    </div>
+    <p class="muted">Дата действует для всех товаров; отдельному товару можно
+      задать свою дату или выключить предзаказ во вкладке «Товары и остатки».
+      Пустой e-mail = <?= h(SW_PREORDER_DEFAULTS['preorder_email']) ?>.</p>
+    <div style="margin-top:12px"><button type="submit">Сохранить настройки</button></div>
+  </form>
+
+  <div class="card">
+    <h2>Заявки (<?= count($requests) ?>)</h2>
+    <table>
+      <thead><tr><th>Дата</th><th>Товар</th><th>Ждёт к</th><th>Имя</th><th>Связь</th><th>Адрес</th><th>Комментарий</th></tr></thead>
+      <tbody>
+      <?php foreach ($requests as $r): ?>
+        <tr>
+          <td class="muted"><?= h(substr((string)$r['created_at'], 0, 16)) ?></td>
+          <td><?= h($r['product_name']) ?><?= $r['color'] ? '<br><span class="muted">' . h($r['color']) . '</span>' : '' ?></td>
+          <td><?= h($r['ready_date'] ? sw_date_label_ru((string)$r['ready_date']) : '—') ?></td>
+          <td><?= h($r['name']) ?></td>
+          <td><span class="pill"><?= h(SW_PREORDER_METHODS[$r['contact_method']] ?? $r['contact_method']) ?></span><br><?= h($r['contact']) ?></td>
+          <td><?= h($r['address']) ?></td>
+          <td><?= nl2br(h($r['comment'])) ?></td>
+        </tr>
+      <?php endforeach; ?>
+      <?php if (!$requests): ?><tr><td colspan="7" class="muted">Пока нет заявок.</td></tr><?php endif; ?>
       </tbody>
     </table>
   </div>

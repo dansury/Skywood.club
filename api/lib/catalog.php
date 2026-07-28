@@ -7,6 +7,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/preorder.php';
 
 // Raw catalog straight from products.json (no DB overlay).
 function sw_catalog_raw(): array
@@ -34,6 +35,7 @@ function sw_catalog_raw(): array
 //   stockTotal  — total units across colours, or null when stock is untracked
 //   stockByColor— {colour: units} when tracked, else null
 //   preorder    — true when stock is tracked and totals zero
+//   preorderOffer — {date,label} of the next-season preorder, or null when off
 function sw_catalog_all(): array
 {
     static $merged = null;
@@ -82,6 +84,7 @@ function sw_catalog_apply_overlay(array $p, ?array $ext, ?array $stockRows): arr
     $p['oldPrice'] = $oldPrice;
     $p['available'] = $available;
     $p['discount'] = $discount;
+    $p['preorderOffer'] = sw_preorder_offer($ext);
 
     if (is_array($stockRows) && count($stockRows) > 0) {
         $total = 0;
