@@ -14,10 +14,14 @@ The repository root is the web root on the hosting (e.g.
 - `data/` — `products.json` (catalog) + runtime `orders.json`,
   `skywood.sqlite` (DB), `.cdek-token.json`, `.installed`. `data/.htaccess`
   denies web access.
-- `.env` — credentials. `.htaccess` denies web access.
+- `../.env` — credentials, **one level above the web root** (outside
+  `public_html`), so the file is unreachable over HTTP and untouched by
+  `pull.php`. A legacy `.env` in the web root still works as a fallback
+  (`.htaccess` denies web access to it).
+- `.env.example` — template with every key and no secrets; copy it to `../.env`.
 - `.htaccess` — `DirectoryIndex`, 301 redirects from the old WordPress URLs,
   `/admin` → `admin.php`, mod_rewrite (`api/.+` → `api/index.php`), deny rules
-  for `.env` / `pull-config.php` / `*.log` / `*.md`.
+  for `.env*` / `pull-config.php` / `*.log` / `*.md`.
 - `robots.txt`, `sitemap.xml` — SEO.
 - `install.php` — installer.
 
@@ -49,11 +53,11 @@ with an outdated PHP; the rest of the API needs PHP 7.x.
 
 Open once after deploying. Checks PHP ≥ 7.2, extensions
 (`curl`, `json`, `mbstring`, `ZipArchive`), `mod_rewrite`, creates/validates
-`data/`, reports `.env` and which integrations are configured. Writes
+`data/`, reports the `.env` it found and which integrations are configured. Writes
 `data/.installed`. Safe to re-run; delete after the site works.
 
 ## BASE_URL
 
 Payment callback URLs (`NotificationURL`, `SuccessURL`, `FailURL`) use
-`BASE_URL` from `.env`; if empty, the PHP API auto-detects it from the request.
+`BASE_URL` from the `.env`; if empty, the PHP API auto-detects it from the request.
 Must point at the public site root.

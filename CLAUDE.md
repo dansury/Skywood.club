@@ -30,7 +30,8 @@ or version history.
 - No filler in specs: facts only — names, types, values, relations.
 - Don't bloat `api/index.php`. New functionality goes into new files
   (`api/lib/*`); additions go where the feature lives.
-- Catalog data — `data/products.json`. Secrets — `.env` (never commit).
+- Catalog data — `data/products.json`. Secrets — `.env` one level above the
+  web root, resolved by `sw_env_path()` (never commit; template `.env.example`).
 - `1/` holds MHT archives of the old WordPress site — reference only.
 
 ## graphify

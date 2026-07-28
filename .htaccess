@@ -25,7 +25,7 @@ DirectoryIndex index.html
 </IfModule>
 
 # Never serve credentials, the deploy config, or the API source as plain files.
-<FilesMatch "(^\.env$|^pull-config\.php$|\.(log|md)$)">
+<FilesMatch "(^\.env(\..+)?$|^pull-config\.php$|\.(log|md)$)">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>

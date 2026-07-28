@@ -1,8 +1,33 @@
 <?php
-// Reads public/.env and builds the runtime config array.
+// Reads the .env credentials file and builds the runtime config array.
 // Mirrors src/config.js (the Node backend) so both stay interchangeable.
 
 declare(strict_types=1);
+
+// Web root of the site (the folder that holds index.html on the hosting).
+function sw_root_dir(): string
+{
+    return dirname(__DIR__, 2);
+}
+
+// Credentials file. It belongs one level above the web root (outside
+// public_html), where it is unreachable over HTTP and survives pull.php.
+// A copy inside the web root is still accepted for legacy installs.
+function sw_env_path(): string
+{
+    static $path = null;
+    if ($path !== null) {
+        return $path;
+    }
+    $root = sw_root_dir();
+    $candidates = [dirname($root) . '/.env', $root . '/.env'];
+    foreach ($candidates as $candidate) {
+        if (is_file($candidate)) {
+            return $path = $candidate;
+        }
+    }
+    return $path = $candidates[0];
+}
 
 function sw_load_env(string $path): array
 {
@@ -58,7 +83,7 @@ function sw_config(): array
         return $config;
     }
 
-    $env = sw_load_env(__DIR__ . '/../../.env');
+    $env = sw_load_env(sw_env_path());
     $get = function (string $key, string $default = '') use ($env): string {
         $val = $env[$key] ?? getenv($key);
         return ($val === false || $val === null || $val === '') ? $default : (string)$val;
