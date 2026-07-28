@@ -1,13 +1,16 @@
 <?php
 // Next-season preorder — «Узнать о поступлении».
 //
-// A product can advertise an expected arrival date; visitors leave a contact
-// instead of placing an order. Nothing here touches the cart, payments or
-// delivery: the request is stored in the DB (table `preorders`, see lib/db.php)
-// and e-mailed to the address configured in the admin panel.
+// While a product is out of stock it advertises an expected arrival date and
+// visitors leave a contact instead of placing an order. Nothing here touches
+// the cart, payments or delivery: the request is stored in the DB (table
+// `preorders`, see lib/db.php) and e-mailed to the address configured in the
+// admin panel.
 //
-// The date is shop-wide by default and can be overridden or switched off per
-// product (products_ext.preorder_mode / preorder_date).
+// There is nothing to switch on per product — the offer follows the stock
+// (catalog.php gates it on `preorder`). Only the date is configurable: shop-wide
+// by default, overridable or switchable off per product
+// (products_ext.preorder_mode / preorder_date).
 
 declare(strict_types=1);
 
@@ -75,9 +78,11 @@ function sw_date_label_ru(string $ymd): string
     return (int)date('j', $ts) . ' ' . SW_MONTHS_RU[(int)date('n', $ts)] . ' ' . date('Y', $ts);
 }
 
-// The offer shown for one product: ['date' => 'YYYY-MM-DD', 'label' => '…'] or
-// null when it is switched off (per product or shop-wide). $ext is the row from
-// products_ext, or null when the product has no overrides yet.
+// The date this product would advertise: ['date' => 'YYYY-MM-DD', 'label' => …]
+// or null when the offer is switched off (per product or shop-wide). $ext is
+// the row from products_ext, or null when the product has no overrides yet.
+// Stock is not consulted here — the caller decides when to show the offer
+// (catalog.php shows it only while the product is out of stock).
 function sw_preorder_offer(?array $ext): ?array
 {
     $s = sw_preorder_settings();

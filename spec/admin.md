@@ -14,8 +14,8 @@ Tabs:
   from products.json), old price, availability checkbox, discount
   (percent + `discount_starts`/`discount_ends` as `datetime-local`), a
   stock input per colour (`stock[<colour>]`; empty = untracked, 0 = preorder),
-  and the next-season preorder («Узнать о поступлении»): `preorder_mode`
-  (`default` / `custom` / `off`) + `preorder_date` for `custom`.
+  and the arrival date advertised while stock is zero («Узнать о поступлении»):
+  `preorder_mode` (`default` / `custom` / `off`) + `preorder_date` for `custom`.
   Saved via `sw_db_product_ext_save()` + `sw_db_stock_set()`.
 - **Заказы** — table from `data/orders.json` (newest first): id, date, customer,
   items, delivery, payment, total, status; preorder badge.
@@ -23,8 +23,9 @@ Tabs:
   order count, total spent, last activity, source.
 - **Лиды / Re:plain** — `sw_leads_all()`: contact-form captures and Re:plain
   webhook events. Shows the Re:plain webhook URL to configure (`<baseUrl>/api/replain`).
-- **Узнать о поступлении** — shop-wide preorder settings (`action=save_preorder`,
-  stored in `settings`): master switch `preorder_enabled`, default arrival date
+- **Узнать о поступлении** — shop-wide waitlist settings (`action=save_preorder`,
+  stored in `settings`); the offer itself follows the stock and needs no
+  per-product enabling: master switch `preorder_enabled`, default arrival date
   `preorder_date` (ships as `2027-03-01`) and the notification recipient
   `preorder_email` (ships as `Dansury@gmail.com`). Below them the table of
   collected requests (`sw_preorders_all()`): date, product + colour, expected

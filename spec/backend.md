@@ -48,12 +48,12 @@ delivery{type,cityCode,cityName,pvzCode,pvzName,cost}, paymentMethod, consent}`.
   works in any subfolder). Responses also carry `preorder`.
 
 ### POST /api/preorder
-Next-season preorder request («Узнать о поступлении»). Collects a contact, does
-not create an order and never touches payment or delivery.
+Waitlist request for an out-of-stock product («Узнать о поступлении»). Collects
+a contact, does not create an order and never touches payment or delivery.
 
 `{productId, color?, name, contact, address?, comment?, consent}`
 - `productId` must resolve to a product whose `preorderOffer` is not null,
-  else → error (the offer is off for that product or shop-wide).
+  else → error (the product is in stock, or the offer is off for it/shop-wide).
 - `name` ≥ 2 chars.
 - `contact` — one free-form field (phone, Telegram nick or e-mail), ≥ 3 chars.
   The channel is **derived**, not asked: `sw_preorder_detect_method()` returns
@@ -152,8 +152,10 @@ Added by the DB overlay in `sw_catalog_all()`:
 - `stockTotal` — units across colours, or `null` when stock is untracked.
 - `stockByColor` — `{colour:units}` when tracked, else `null`.
 - `preorder` — `true` when stock is tracked and totals zero.
-- `preorderOffer` — `{date:'YYYY-MM-DD', label:'1 марта 2027'}` when the
-  next-season preorder is offered for this product, else `null`. Resolved from
-  `products_ext.preorder_mode`: `off` → null; `custom` → `preorder_date` of the
-  product; anything else → the shop-wide `preorder_date` setting. Always null
-  when the shop-wide `preorder_enabled` setting is off or the date is empty.
+- `preorderOffer` — `{date:'YYYY-MM-DD', label:'1 марта 2027'}` while the
+  product is out of stock (`preorder` is true), else `null`. The offer needs no
+  per-product switch: it follows the stock. Only the date is configurable,
+  resolved from `products_ext.preorder_mode`: `off` → null (never offered);
+  `custom` → `preorder_date` of the product; anything else → the shop-wide
+  `preorder_date` setting. Always null when the shop-wide `preorder_enabled`
+  setting is off or the date is empty.

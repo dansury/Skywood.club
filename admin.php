@@ -267,7 +267,8 @@ $tab = $_GET['tab'] ?? 'stock';
     <fieldset>
       <legend>Предзаказ «Узнать о поступлении»</legend>
       <?php $pmode = (string)($ext['preorder_mode'] ?? 'default');
-            $offer = $p['preorderOffer'] ?? null; ?>
+            // Дата товара без учёта остатка — витрина покажет её при нуле.
+            $offer = sw_preorder_offer($ext ?: null); ?>
       <div class="grid">
         <div><label>Режим</label>
           <select name="preorder_mode">
@@ -278,8 +279,12 @@ $tab = $_GET['tab'] ?? 'stock';
         <div><label>Своя дата поступления</label>
           <input type="date" name="preorder_date" value="<?= h($ext['preorder_date'] ?? '') ?>"></div>
       </div>
-      <p class="muted">Сейчас на витрине:
-        <?= $offer ? 'кнопка «Узнать о поступлении», ожидаем ' . h($offer['label']) : 'предзаказ не предлагается' ?>.
+      <p class="muted">Кнопка «Узнать о поступлении» появляется на витрине сама,
+        когда остаток становится нулевым — включать её отдельно не нужно.
+        Сейчас:
+        <?php if (!$offer): ?>выключена для этого товара<?php
+              elseif (!empty($p['preorder'])): ?><b>показывается</b>, ожидаем <?= h($offer['label']) ?><?php
+              else: ?>появится при нулевом остатке, ожидаем <?= h($offer['label']) ?><?php endif; ?>.
         Своя дата учитывается только в режиме «Своя дата».</p>
     </fieldset>
     <button type="submit">Сохранить</button>
@@ -394,8 +399,9 @@ $tab = $_GET['tab'] ?? 'stock';
     <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
     <input type="hidden" name="action" value="save_preorder">
     <h2>Настройки предзаказа</h2>
-    <p class="muted">Кнопка «Узнать о поступлении» на карточке товара: клиент
-      оставляет контакты и ждёт следующую партию. Ничего не оплачивается.</p>
+    <p class="muted">Когда остаток товара становится нулевым, на его карточке
+      появляется кнопка «Узнать о поступлении»: клиент оставляет контакты и ждёт
+      следующую партию. Ничего не оплачивается, включать по товарам не нужно.</p>
     <div class="grid">
       <div><label>Предлагать предзаказ</label>
         <div class="row"><input type="checkbox" name="preorder_enabled"

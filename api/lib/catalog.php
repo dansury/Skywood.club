@@ -35,7 +35,8 @@ function sw_catalog_raw(): array
 //   stockTotal  — total units across colours, or null when stock is untracked
 //   stockByColor— {colour: units} when tracked, else null
 //   preorder    — true when stock is tracked and totals zero
-//   preorderOffer — {date,label} of the next-season preorder, or null when off
+//   preorderOffer — {date,label} of the waitlist offer while the product is out
+//                   of stock (preorder = true), else null
 function sw_catalog_all(): array
 {
     static $merged = null;
@@ -84,7 +85,6 @@ function sw_catalog_apply_overlay(array $p, ?array $ext, ?array $stockRows): arr
     $p['oldPrice'] = $oldPrice;
     $p['available'] = $available;
     $p['discount'] = $discount;
-    $p['preorderOffer'] = sw_preorder_offer($ext);
 
     if (is_array($stockRows) && count($stockRows) > 0) {
         $total = 0;
@@ -99,6 +99,10 @@ function sw_catalog_apply_overlay(array $p, ?array $ext, ?array $stockRows): arr
         $p['stockByColor'] = null;
         $p['preorder'] = false;
     }
+
+    // Лист ожидания предлагаем ровно тогда, когда товара нет в наличии —
+    // отдельно включать его для товара не нужно, только дату (или «выключен»).
+    $p['preorderOffer'] = $p['preorder'] ? sw_preorder_offer($ext) : null;
     return $p;
 }
 
