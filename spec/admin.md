@@ -28,7 +28,7 @@ Tabs:
   `preorder_date` (ships as `2027-03-01`) and the notification recipient
   `preorder_email` (ships as `Dansury@gmail.com`). Below them the table of
   collected requests (`sw_preorders_all()`): date, product + colour, expected
-  arrival, name, preferred contact channel + contact, address, comment.
+  arrival, name, contact + the channel derived from it, address, comment.
 
 Requests also feed the **Клиенты** tab (source `поступление`).
 

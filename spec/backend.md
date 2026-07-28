@@ -51,12 +51,15 @@ delivery{type,cityCode,cityName,pvzCode,pvzName,cost}, paymentMethod, consent}`.
 Next-season preorder request («Узнать о поступлении»). Collects a contact, does
 not create an order and never touches payment or delivery.
 
-`{productId, color?, name, contactMethod, contact, address?, comment?, consent}`
+`{productId, color?, name, contact, address?, comment?, consent}`
 - `productId` must resolve to a product whose `preorderOffer` is not null,
   else → error (the offer is off for that product or shop-wide).
-- `name` ≥ 2 chars. `contactMethod` ∈ `phone|whatsapp|telegram|email`.
-- `contact` — validated per method: `email` → e-mail syntax, `phone`/`whatsapp`
-  → `^\+?[0-9\s\-()]{10,18}$`, `telegram` → ≥ 3 chars.
+- `name` ≥ 2 chars.
+- `contact` — one free-form field (phone, Telegram nick or e-mail), ≥ 3 chars.
+  The channel is **derived**, not asked: `sw_preorder_detect_method()` returns
+  `email` (valid e-mail syntax), `telegram` (`@nick` or a `t.me/` link),
+  `phone` (`^\+?[0-9\s\-()]{10,18}$`) or `other` (stored as written). The only
+  rejected shape is an `other` value containing `@` — a mistyped e-mail.
 - `address`, `comment` — optional free text (trimmed, capped at 300/1000).
 - `consent` (152-ФЗ) is **required** — missing → error.
 - Stores the request in the DB (`preorders`), stamped with the product's
@@ -117,7 +120,8 @@ response header `X-Sw-Debug` (ASCII JSON) and, for object responses, as a
   `sw_preorders_all()`. `sw_db_migrate()` also back-fills columns added later
   via `sw_db_add_column()`, so existing databases upgrade in place.
 - `lib/preorder.php` — next-season preorder offer and requests.
-  `SW_PREORDER_METHODS` (contact-method labels), `SW_PREORDER_DEFAULTS`
+  `SW_PREORDER_METHODS` (contact-channel labels), `sw_preorder_detect_method()`,
+  `SW_PREORDER_DEFAULTS`
   (`preorder_enabled=1`, `preorder_date=2027-03-01`,
   `preorder_email=Dansury@gmail.com`), `sw_preorder_settings()`,
   `sw_preorder_offer($ext)` → `{date,label}|null`, `sw_date_label_ru()`,

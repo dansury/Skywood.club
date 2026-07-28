@@ -316,22 +316,13 @@
 
   /* ---------- предзаказ: «Узнать о поступлении» ---------- */
   // Заявка на следующую партию: контакт вместо заказа — без оплаты и доставки.
-  const pre = { id: '', color: '', method: 'phone', busy: false };
-
-  const PRE_METHODS = [
-    ['phone', 'Телефон', 'Телефон *', '+7 999 000-00-00'],
-    ['whatsapp', 'WhatsApp', 'Номер WhatsApp *', '+7 999 000-00-00'],
-    ['telegram', 'Telegram', 'Ник или телефон в Telegram *', '@nickname'],
-    ['email', 'E-mail', 'E-mail *', 'you@example.com'],
-  ];
-  const preMethod = () => PRE_METHODS.find((m) => m[0] === pre.method) || PRE_METHODS[0];
+  const pre = { id: '', color: '', busy: false };
 
   function openPreorder(id, color) {
     const p = product(id);
     if (!p || !p.preorderOffer) return;
     pre.id = id;
     pre.color = color || (p.options?.color?.[0] || '');
-    pre.method = 'phone';
     pre.busy = false;
     renderPreorder();
     openModal('#preorderModal');
@@ -341,7 +332,6 @@
     const p = product(pre.id);
     const prof = loadProfile().customer || {};
     const colors = p.options?.color || [];
-    const m = preMethod();
     $('#preorderBox').innerHTML = `<button class="modal__close" data-close>✕</button>
       <div class="ck">
         <div class="ck__head">
@@ -357,15 +347,8 @@
           <select id="preColor">${colors.map((c) =>
             `<option value="${esc(c)}" ${c === pre.color ? 'selected' : ''}>${esc(c)}</option>`).join('')}</select></div>` : ''}
         <div class="field"><label>Как с вами связаться *</label>
-          <div class="choice choice--inline" id="preMethodChoice">
-            ${PRE_METHODS.map(([val, title]) => `
-            <label class="${pre.method === val ? 'sel' : ''}">
-              <input type="radio" name="preMethod" value="${val}" ${pre.method === val ? 'checked' : ''}>
-              <span><span class="co-title">${title}</span></span></label>`).join('')}
-          </div>
-        </div>
-        <div class="field"><label id="preContactLabel">${m[2]}</label>
-          <input id="preContact" placeholder="${m[3]}"></div>
+          <input id="preContact" placeholder="Телефон, Telegram или e-mail">
+          <div class="hint">Как вам удобнее: +7 999 000-00-00, @nickname или you@example.com</div></div>
         <div class="field"><label>Адрес доставки — необязательно</label>
           <input id="preAddr" value="${esc(prof.address || '')}" placeholder="Город, улица, дом"></div>
         <div class="field"><label>Комментарий</label>
@@ -385,15 +368,6 @@
   }
 
   function bindPreorder() {
-    $('#preMethodChoice').addEventListener('change', (e) => {
-      pre.method = e.target.value;
-      $$('#preMethodChoice label').forEach((l) =>
-        l.classList.toggle('sel', l.querySelector('input').checked));
-      // Меняем подпись и подсказку поля, сохраняя уже введённый контакт.
-      const m = preMethod();
-      $('#preContactLabel').textContent = m[2];
-      $('#preContact').placeholder = m[3];
-    });
     $('#preColor')?.addEventListener('change', (e) => { pre.color = e.target.value; });
     $('#preSubmit').addEventListener('click', submitPreorder);
   }
@@ -408,14 +382,13 @@
       productId: pre.id,
       color: pre.color,
       name: $('#preName').value.trim(),
-      contactMethod: pre.method,
       contact: $('#preContact').value.trim(),
       address: $('#preAddr').value.trim(),
       comment: $('#preComment').value.trim(),
       consent: $('#preConsent').checked,
     };
     if (body.name.length < 2) return fail('Укажите, как к вам обращаться');
-    if (!body.contact) return fail('Укажите контакт для связи');
+    if (body.contact.length < 3) return fail('Укажите телефон, Telegram или e-mail');
     if (!body.consent) return fail('Подтвердите согласие на обработку персональных данных');
 
     pre.busy = true;

@@ -17,8 +17,8 @@ Placeholders use `{{name}}` syntax and are filled per order:
 | `{{payment}}`      | Payment method, human-readable             |
 | `{{product}}`      | Product name (+ colour) of a preorder request |
 | `{{ready_date}}`   | Expected arrival, e.g. `1 марта 2027`      |
-| `{{contact_method}}` | Preferred channel: Телефон / WhatsApp / Telegram / E-mail |
-| `{{contact}}`      | The contact itself (phone, nick or e-mail) |
+| `{{contact_method}}` | Channel derived from the contact: Телефон / Telegram / E-mail / Контакт |
+| `{{contact}}`      | The contact as the visitor typed it         |
 
 Signature appended to every customer email:
 
@@ -108,8 +108,8 @@ Internal copy, not signed. Sent to `ADMIN_EMAIL`.
 
 ## 4. Next-season preorder (`preorder_request`) — to customer
 
-Sent when a visitor leaves a «Узнать о поступлении» request **and** picked
-`E-mail` as the preferred contact channel. No order and no payment involved.
+Sent when a visitor leaves a «Узнать о поступлении» request **and** the contact
+they typed is an e-mail address. No order and no payment involved.
 
 **Subject:** `Сообщим о поступлении — Skywood`
 

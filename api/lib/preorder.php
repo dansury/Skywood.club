@@ -20,13 +20,32 @@ const SW_PREORDER_DEFAULTS = [
     'preorder_email'   => 'Dansury@gmail.com',
 ];
 
-// Preferred contact channels offered in the form.
+// Contact channels. The visitor types one contact into a single field and the
+// channel is derived from it (see sw_preorder_detect_method) — `whatsapp` only
+// appears on rows stored by an earlier version of the form.
 const SW_PREORDER_METHODS = [
     'phone'    => 'Телефон',
     'whatsapp' => 'WhatsApp',
     'telegram' => 'Telegram',
     'email'    => 'E-mail',
+    'other'    => 'Контакт',
 ];
+
+// Which channel the visitor left: e-mail, Telegram nick/link, phone number, or
+// something else we simply pass through to the owner as written.
+function sw_preorder_detect_method(string $contact): string
+{
+    if (filter_var($contact, FILTER_VALIDATE_EMAIL)) {
+        return 'email';
+    }
+    if (preg_match('~^@[\w.]{3,}$~u', $contact) || stripos($contact, 't.me/') !== false) {
+        return 'telegram';
+    }
+    if (preg_match('~^\+?[0-9\s\-()]{10,18}$~', $contact)) {
+        return 'phone';
+    }
+    return 'other';
+}
 
 function sw_preorder_settings(): array
 {
@@ -106,22 +125,15 @@ function sw_preorder_validate(array $body): array
         $errors[] = 'Укажите, как к вам обращаться';
     }
 
-    $method = (string)($body['contactMethod'] ?? '');
-    if (!isset(SW_PREORDER_METHODS[$method])) {
-        $errors[] = 'Выберите удобный способ связи';
-        $method = '';
-    }
-
+    // One free-form contact field: телефон, Telegram или e-mail. We accept
+    // whatever the visitor prefers and only catch a clearly mistyped e-mail —
+    // an unreachable contact is worse than a strict form.
     $contact = trim((string)($body['contact'] ?? ''));
-    if ($contact === '') {
-        $errors[] = 'Укажите контакт для связи';
-    } elseif ($method === 'email' && !filter_var($contact, FILTER_VALIDATE_EMAIL)) {
-        $errors[] = 'Укажите корректный e-mail';
-    } elseif (($method === 'phone' || $method === 'whatsapp')
-        && !preg_match('~^\+?[0-9\s\-()]{10,18}$~', $contact)) {
-        $errors[] = 'Укажите корректный телефон';
-    } elseif ($method === 'telegram' && mb_strlen($contact) < 3) {
-        $errors[] = 'Укажите ник или телефон в Telegram';
+    $method = sw_preorder_detect_method($contact);
+    if (mb_strlen($contact) < 3) {
+        $errors[] = 'Укажите телефон, Telegram или e-mail';
+    } elseif ($method === 'other' && strpos(ltrim($contact, '@'), '@') !== false) {
+        $errors[] = 'Проверьте адрес e-mail';
     }
 
     if (empty($body['consent'])) {

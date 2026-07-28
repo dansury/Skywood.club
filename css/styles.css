@@ -443,10 +443,6 @@ h1,h2,h3,h4{font-family:'Unbounded',sans-serif;font-weight:700;line-height:1.15;
 .choice label>span{display:flex;flex-direction:column;gap:3px}
 .choice .co-title{font-weight:700}
 .choice .co-sub{font-size:13px;color:var(--muted)}
-/* компактный ряд вариантов — способ связи в предзаказе */
-.choice--inline{flex-direction:row;flex-wrap:wrap}
-.choice--inline label{flex:1 1 calc(50% - 5px);align-items:center;padding:11px 14px;gap:9px}
-.choice--inline input{margin-top:0}
 .ac-list{max-height:210px;overflow-y:auto;border:1px solid var(--line);border-radius:10px;
   margin-top:4px;display:none}
 .ac-list.show{display:block}
