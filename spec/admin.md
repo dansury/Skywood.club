@@ -15,8 +15,12 @@ Tabs:
   from products.json), old price, availability checkbox, discount
   (percent + `discount_starts`/`discount_ends` as `datetime-local`), a
   stock input per colour (`stock[<colour>]`; empty = untracked, 0 = preorder),
-  and the arrival date advertised while stock is zero («Узнать о поступлении»):
-  `preorder_mode` (`default` / `custom` / `off`) + `preorder_date` for `custom`.
+  a checkbox to allow the paid "Предзаказ" purchase while stock is zero
+  (`paid_preorder`, checked/enabled by default; unchecking it turns the
+  product into a plain "Нет в наличии" — no add-to-cart — while stock stays 0),
+  and the arrival date advertised while stock is zero («Узнать о поступлении»,
+  independent of the checkbox above): `preorder_mode` (`default` / `custom` /
+  `off`) + `preorder_date` for `custom`.
   Saved via `sw_db_product_ext_save()` + `sw_db_stock_set()`.
 - **Заказы** — table from `data/orders.json` (newest first): id, date, customer,
   items, delivery, payment, total, status; preorder badge.
