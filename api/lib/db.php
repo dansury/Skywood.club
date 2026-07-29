@@ -109,6 +109,8 @@ function sw_db_migrate(PDO $h): void
     // Columns added after the first release — back-filled into existing DBs.
     sw_db_add_column($h, 'products_ext', 'preorder_mode', 'TEXT');
     sw_db_add_column($h, 'products_ext', 'preorder_date', 'TEXT');
+    // NULL/1 = paid preorder allowed while out of stock (default), 0 = disabled.
+    sw_db_add_column($h, 'products_ext', 'paid_preorder', 'INTEGER');
 }
 
 // Adds a column to an existing table when it is missing. Lets migrations extend
@@ -253,7 +255,7 @@ function sw_db_product_ext_save(string $productId, array $fields): void
         return;
     }
     $cols = ['price', 'old_price', 'available', 'discount_percent', 'discount_starts', 'discount_ends',
-             'preorder_mode', 'preorder_date'];
+             'preorder_mode', 'preorder_date', 'paid_preorder'];
     $cur = sw_db_products_ext()[$productId] ?? [];
     $vals = [];
     foreach ($cols as $c) {
@@ -261,12 +263,12 @@ function sw_db_product_ext_save(string $productId, array $fields): void
     }
     $st = $db->prepare('INSERT INTO products_ext
         (product_id, price, old_price, available, discount_percent, discount_starts, discount_ends,
-         preorder_mode, preorder_date, updated_at)
-        VALUES (:id, :price, :old_price, :available, :dp, :ds, :de, :pm, :pd, :ts)
+         preorder_mode, preorder_date, paid_preorder, updated_at)
+        VALUES (:id, :price, :old_price, :available, :dp, :ds, :de, :pm, :pd, :pp, :ts)
         ON CONFLICT(product_id) DO UPDATE SET
             price = :price, old_price = :old_price, available = :available,
             discount_percent = :dp, discount_starts = :ds, discount_ends = :de,
-            preorder_mode = :pm, preorder_date = :pd, updated_at = :ts');
+            preorder_mode = :pm, preorder_date = :pd, paid_preorder = :pp, updated_at = :ts');
     $st->execute([
         ':id'        => $productId,
         ':price'     => $vals['price'],
@@ -277,6 +279,7 @@ function sw_db_product_ext_save(string $productId, array $fields): void
         ':de'        => $vals['discount_ends'],
         ':pm'        => $vals['preorder_mode'],
         ':pd'        => $vals['preorder_date'],
+        ':pp'        => $vals['paid_preorder'],
         ':ts'        => date('c'),
     ]);
 }

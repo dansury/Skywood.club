@@ -36,7 +36,9 @@ Demo fallback: weight-based cost.
 delivery{type,cityCode,cityName,pvzCode,pvzName,cost}, paymentMethod, consent}`.
 - Validates; computes `subtotal`, `total=subtotal+deliveryCost`.
 - `consent` (personal-data consent, 152-ФЗ) is **required** — missing → error.
-- Per line, when stock is tracked and short → `preorder:true` (never blocked).
+- Per line, when stock is tracked and short → `preorder:true` (never blocked),
+  unless the product's `soldOut` is true (paid preorder disabled for it while
+  out of stock) → line rejected with an error, same as an unavailable product.
   Order-level `preorder` = any line preorder.
 - Creates order; registers CDEK order if enabled.
 - Sends e-mail (`lib/mail.php`): customer confirmation (or preorder variant) +
@@ -116,7 +118,7 @@ response header `X-Sw-Debug` (ASCII JSON) and, for object responses, as a
 - `lib/db.php` — SQLite (PDO) store; never throws on the public path (returns
   empty/neutral when `pdo_sqlite` missing). Tables `products_ext` (price,
   old_price, available, discount_percent/starts/ends, preorder_mode,
-  preorder_date), `stock` (product_id,color,qty), `leads`, `settings`
+  preorder_date, paid_preorder), `stock` (product_id,color,qty), `leads`, `settings`
   (name,value), `preorders`. Helpers `sw_db()`, `sw_db_available()`,
   `sw_db_products_ext()`, `sw_db_stock_*()`, `sw_db_product_ext_save()`,
   `sw_discount_active()`, `sw_lead_create()`, `sw_leads_all()`,
@@ -155,11 +157,18 @@ Added by the DB overlay in `sw_catalog_all()`:
 - `discount` — `{percent,endsAt}` when an active discount applies, else `null`.
 - `stockTotal` — units across colours, or `null` when stock is untracked.
 - `stockByColor` — `{colour:units}` when tracked, else `null`.
-- `preorder` — `true` when stock is tracked and totals zero.
+- `preorder` — `true` when stock is tracked, totals zero, and paid preorder is
+  enabled for the product (`products_ext.paid_preorder` — `NULL`/`1` = enabled,
+  the default; `0` = disabled via the admin checkbox).
+- `soldOut` — `true` when stock is tracked, totals zero, and paid preorder is
+  disabled (`paid_preorder = 0`). Mutually exclusive with `preorder`. The
+  storefront shows a disabled "Нет в наличии" button instead of "Предзаказ"
+  and `POST /api/orders` rejects the line.
 - `preorderOffer` — `{date:'YYYY-MM-DD', label:'1 марта 2027'}` while the
-  product is out of stock (`preorder` is true), else `null`. The offer needs no
-  per-product switch: it follows the stock. Only the date is configurable,
-  resolved from `products_ext.preorder_mode`: `off` → null (never offered);
-  `custom` → `preorder_date` of the product; anything else → the shop-wide
+  product is out of stock (`preorder` or `soldOut` is true), else `null`. The
+  waitlist offer is independent of the paid-preorder toggle above — it follows
+  the stock only. Only the date is configurable, resolved from
+  `products_ext.preorder_mode`: `off` → null (never offered); `custom` →
+  `preorder_date` of the product; anything else → the shop-wide
   `preorder_date` setting. Always null when the shop-wide `preorder_enabled`
   setting is off or the date is empty.

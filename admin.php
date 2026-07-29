@@ -82,6 +82,7 @@ if ($authed && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']))
             'discount_ends'    => trim((string)sw_admin_post('discount_ends', '')) ?: null,
             'preorder_mode'    => $mode,
             'preorder_date'    => trim((string)sw_admin_post('preorder_date', '')) ?: null,
+            'paid_preorder'    => isset($_POST['paid_preorder']) ? 1 : 0,
         ]);
         $stock = $_POST['stock'] ?? [];
         if (is_array($stock)) {
@@ -168,6 +169,7 @@ $tab = $_GET['tab'] ?? 'stock';
   .muted { color:#7a857c; }
   .pill { display:inline-block; padding:2px 9px; border-radius:20px; font-size:12px; background:#eef2ee; }
   .pill.pre { background:#fff0d8; color:#8a5a00; }
+  .pill.off { background:#f4d9d9; color:#a12727; }
   .pill.paid { background:#e6f4dd; color:#2f6b1e; }
   .login { max-width:360px; margin:8vh auto; }
   .login input { margin-bottom:10px; }
@@ -230,7 +232,8 @@ $tab = $_GET['tab'] ?? 'stock';
     <input type="hidden" name="action" value="save_product">
     <input type="hidden" name="product_id" value="<?= h($p['id']) ?>">
     <h2><?= h($p['name']) ?> <span class="muted">(<?= h($p['id']) ?>)</span>
-      <?php if (!empty($p['preorder'])): ?><span class="pill pre">предзаказ</span><?php endif; ?>
+      <?php if (!empty($p['preorder'])): ?><span class="pill pre">предзаказ</span><?php
+            elseif (!empty($p['soldOut'])): ?><span class="pill off">нет в наличии</span><?php endif; ?>
     </h2>
     <div class="grid">
       <div><label>Цена, ₽ (база: <?= rub(sw_catalog_raw_price($p['id'])) ?>)</label>
@@ -263,6 +266,11 @@ $tab = $_GET['tab'] ?? 'stock';
         <?php endforeach; ?>
       </div>
       <p class="muted">Пусто = остаток не отслеживается (товар всегда доступен). 0 = нет в наличии → предзаказ.</p>
+      <?php $paidPreorderEnabled = $ext === [] || $ext['paid_preorder'] === null
+          || (int)$ext['paid_preorder'] === 1; ?>
+      <div class="row"><input type="checkbox" name="paid_preorder" <?= $paidPreorderEnabled ? 'checked' : '' ?>>
+        <span class="muted">разрешить кнопку «Предзаказ» с оплатой при нулевом остатке —
+          если выключить, при нуле товар просто «Нет в наличии»</span></div>
     </fieldset>
     <fieldset>
       <legend>Предзаказ «Узнать о поступлении»</legend>
@@ -283,7 +291,7 @@ $tab = $_GET['tab'] ?? 'stock';
         когда остаток становится нулевым — включать её отдельно не нужно.
         Сейчас:
         <?php if (!$offer): ?>выключена для этого товара<?php
-              elseif (!empty($p['preorder'])): ?><b>показывается</b>, ожидаем <?= h($offer['label']) ?><?php
+              elseif (!empty($p['preorder']) || !empty($p['soldOut'])): ?><b>показывается</b>, ожидаем <?= h($offer['label']) ?><?php
               else: ?>появится при нулевом остатке, ожидаем <?= h($offer['label']) ?><?php endif; ?>.
         Своя дата учитывается только в режиме «Своя дата».</p>
     </fieldset>

@@ -119,6 +119,7 @@
           poster="assets/img/${p.images[0]}" data-src="assets/video/${p.video}"></video>` : ''}
         ${p.badge ? `<span class="product__badge ${p.oldPrice ? 'product__badge--sale' : ''}">${p.badge}</span>` : ''}
         ${p.preorder ? '<span class="product__badge product__badge--sale">Предзаказ</span>' : ''}
+        ${p.soldOut ? '<span class="product__badge product__badge--off">Нет в наличии</span>' : ''}
         ${p.available ? '' : '<div class="product__soldout">Под заказ</div>'}
         ${frames.length > 1 ? `
         <button class="gallery-arrow gallery-arrow--prev" type="button" aria-label="Предыдущий кадр">‹</button>
@@ -138,7 +139,7 @@
         </div>
         <div class="product__actions">
           <button class="btn btn--ghost btn--sm" data-act="details">Подробнее</button>
-          <button class="btn btn--primary btn--sm" data-act="buy">${p.preorder ? 'Предзаказ' : 'В корзину'}</button>
+          <button class="btn btn--primary btn--sm" data-act="buy" ${p.soldOut ? 'disabled' : ''}>${p.preorder ? 'Предзаказ' : (p.soldOut ? 'Нет в наличии' : 'В корзину')}</button>
         </div>
         ${p.preorderOffer ? `
         <button class="btn btn--ghost btn--sm product__notify" data-act="notify">Узнать о поступлении</button>
@@ -247,7 +248,7 @@
             <b>${money(p.price)}</b>
             ${p.oldPrice ? `<del>${money(p.oldPrice)}</del>` : ''}
           </div>
-          <button class="btn btn--primary btn--block" id="pmBuy">${p.preorder ? 'Оформить предзаказ' : 'В корзину'}</button>
+          <button class="btn btn--primary btn--block" id="pmBuy" ${p.soldOut ? 'disabled' : ''}>${p.preorder ? 'Оформить предзаказ' : (p.soldOut ? 'Нет в наличии' : 'В корзину')}</button>
           ${p.preorderOffer ? `
           <button class="btn btn--ghost btn--block" id="pmNotify">Узнать о поступлении</button>
           <div class="product__eta">Следующая партия — ${esc(p.preorderOffer.label)}</div>` : ''}
@@ -428,7 +429,7 @@
   /* ---------- корзина ---------- */
   function addToCart(id, color) {
     const p = product(id);
-    if (!p) return;
+    if (!p || p.soldOut) return;
     const col = color || (p.options?.color?.[0] || '');
     const line = cart.find((c) => c.id === id && c.color === col);
     if (line) line.qty = Math.min(10, line.qty + 1);

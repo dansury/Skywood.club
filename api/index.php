@@ -102,6 +102,10 @@ function sw_validate_order(array $body): array
             $errors[] = "Товар «{$product['name']}» сейчас недоступен";
             continue;
         }
+        if (!empty($product['soldOut'])) {
+            $errors[] = "Товар «{$product['name']}» сейчас нет в наличии";
+            continue;
+        }
         $qty = max(1, min(10, (int)($row['qty'] ?? 1)));
         $colors = $product['options']['color'] ?? [];
         $color = '';

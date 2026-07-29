@@ -34,9 +34,12 @@ function sw_catalog_raw(): array
 //   discount    — {percent,endsAt} when an active discount applies, else null
 //   stockTotal  — total units across colours, or null when stock is untracked
 //   stockByColor— {colour: units} when tracked, else null
-//   preorder    — true when stock is tracked and totals zero
-//   preorderOffer — {date,label} of the waitlist offer while the product is out
-//                   of stock (preorder = true), else null
+//   preorder    — true when stock is tracked, totals zero, and paid preorder
+//                 is enabled for the product (products_ext.paid_preorder)
+//   soldOut     — true when stock is tracked, totals zero, and paid preorder
+//                 is disabled (mutually exclusive with preorder)
+//   preorderOffer — {date,label} of the waitlist offer while the product is
+//                   out of stock (preorder or soldOut), else null
 function sw_catalog_all(): array
 {
     static $merged = null;
@@ -93,16 +96,24 @@ function sw_catalog_apply_overlay(array $p, ?array $ext, ?array $stockRows): arr
         }
         $p['stockTotal'] = $total;
         $p['stockByColor'] = $stockRows;
-        $p['preorder'] = $total <= 0;
+        $outOfStock = $total <= 0;
     } else {
         $p['stockTotal'] = null;
         $p['stockByColor'] = null;
-        $p['preorder'] = false;
+        $outOfStock = false;
     }
+
+    // paid_preorder: NULL/1 = paid "Предзаказ" purchase allowed while out of
+    // stock (default), 0 = admin disabled it — the product is just sold out.
+    $paidPreorderEnabled = $ext === null || $ext['paid_preorder'] === null
+        || (int)$ext['paid_preorder'] === 1;
+    $p['preorder'] = $outOfStock && $paidPreorderEnabled;
+    $p['soldOut'] = $outOfStock && !$paidPreorderEnabled;
 
     // Лист ожидания предлагаем ровно тогда, когда товара нет в наличии —
     // отдельно включать его для товара не нужно, только дату (или «выключен»).
-    $p['preorderOffer'] = $p['preorder'] ? sw_preorder_offer($ext) : null;
+    // Не зависит от paid_preorder — доступен и когда оплачиваемый предзаказ выключен.
+    $p['preorderOffer'] = $outOfStock ? sw_preorder_offer($ext) : null;
     return $p;
 }
 
