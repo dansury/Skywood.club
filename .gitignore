@@ -7,6 +7,8 @@ data/skywood.sqlite-shm
 data/.cdek-token.json
 data/.cdek-cities.json
 data/.installed
+data/auto-pull.json
+data/auto-pull.json.lock
 *.log
 .DS_Store
 

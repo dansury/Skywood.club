@@ -36,6 +36,14 @@ Tabs:
   collected requests (`sw_preorders_all()`): date, product + colour, expected
   arrival, name, contact + the channel derived from it, address, comment.
 
+- **Обновление кода** — the active-development switch (`action=save_autopull`,
+  stored in `settings`): `autopull_enabled` (check GitHub on every PHP request),
+  `autopull_interval` (seconds between checks, `0` = every request) and
+  `autopull_url` (explicit `pull.php` URL, empty = derived). The card names what is
+  tracked (from `pull-config.php`) and how the last check ended; a second form
+  (`action=autopull_check`) runs a one-off check-and-deploy regardless of the
+  checkbox. Mechanics: `spec/deploy.md` § Auto-pull.
+
 Requests also feed the **Клиенты** tab (source `поступление`).
 
 `settings.php` is a legacy minimal price/availability editor that writes

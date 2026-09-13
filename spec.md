@@ -11,8 +11,8 @@ HTML-фронтенд + PHP-бэкенд. Работает на обычном P
 | Фронтенд (лендинг, корзина, чекаут) | `index.html`, `order.html`, `privacy.html`, `css/*`, `js/*` | `spec/frontend.md` |
 | Бэкенд (PHP API) | `api/index.php`, `api/lib/*.php` | `spec/backend.md` |
 | Платежи и доставка | `api/lib/tinkoff.php`, `api/lib/cdek.php` | `spec/integrations.md` |
-| Админка (товары/остатки/скидки, заказы, клиенты, лиды, предзаказы) | `admin.php`, `api/lib/db.php`, `api/lib/mail.php`, `api/lib/preorder.php` | `spec/admin.md` |
-| Деплой и SEO | `pull.php`, `pull-config.php`, `.htaccess`, `robots.txt`, `sitemap.xml` | `spec/deploy.md` |
+| Админка (товары/остатки/скидки, заказы, клиенты, лиды, предзаказы, обновление кода) | `admin.php`, `api/lib/db.php`, `api/lib/mail.php`, `api/lib/preorder.php` | `spec/admin.md` |
+| Деплой и SEO | `pull.php`, `pull-config.php`, `api/lib/autopull.php`, `.htaccess`, `robots.txt`, `sitemap.xml` | `spec/deploy.md` |
 
 ## Catalog
 
@@ -44,5 +44,7 @@ HTML-фронтенд + PHP-бэкенд. Работает на обычном P
 - `../.env` — доступы (на уровень выше корня сайта, вне `public_html`);
   `.env.example` — шаблон без секретов; `data/products.json` — каталог;
   `data/skywood.sqlite` — БД.
-- `pull.php`, `pull-config.php` — обновление сайта на хостинге из GitHub.
+- `pull.php`, `pull-config.php` — обновление сайта на хостинге из GitHub;
+  `api/lib/autopull.php` — тихая проверка «есть ли новый коммит» на каждом
+  PHP-запросе (галочка в админке).
 - `1/*.mht` — архив старого сайта.

@@ -12,6 +12,7 @@ require_once __DIR__ . '/lib/cdek.php';
 require_once __DIR__ . '/lib/tinkoff.php';
 require_once __DIR__ . '/lib/mail.php';
 require_once __DIR__ . '/lib/preorder.php';
+require_once __DIR__ . '/lib/autopull.php';
 
 // В debug-режиме (?debug=1) собираем PHP-ошибки в трассу запроса. В поток их
 // не печатаем — иначе они ломают JSON-ответ; в обычном режиме они скрыты.
@@ -20,6 +21,11 @@ if (sw_debug_enabled()) {
     error_reporting(E_ALL);
     sw_debug_install_handlers();
 }
+
+// Автообновление кода: пока в админке стоит галочка, каждый запрос тихо
+// проверяет head в GitHub и выкладывает новый коммит через pull.php. Вызовам
+// API редирект не нужен — им отвечают данными (spec/backend.md).
+sw_autopull_run();
 
 // ---------- helpers ----------
 
