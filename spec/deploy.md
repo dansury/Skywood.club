@@ -85,7 +85,11 @@ comes from `pull-state.json` when the installed `pull.php` writes one, otherwise
 this file.
 
 Limits: one GitHub API call per request at `autopull_interval = 0` (5000/h with a
-token), and the deploy is a second HTTP request to the same host.
+token), and the deploy is a second HTTP request to the same host. When the host serves
+one PHP request at a time, `pull.php` cannot answer while this page is being served: the
+wait is dropped after 20 seconds of silence, the page renders the old code, and the
+deploy finishes in the background (`pull.php` sets `ignore_user_abort(true)`), so the
+next request is on the new code.
 
 ## install.php — first run
 
