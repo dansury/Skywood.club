@@ -49,6 +49,48 @@ Metadata), `keep_files`, `timezone`.
 `pull.php` and `install.php` are PHP 5.6+ compatible so they load even on hosts
 with an outdated PHP; the rest of the API needs PHP 7.x.
 
+## Auto-pull — the update check on every PHP request
+
+`api/lib/autopull.php` (class `AutoPull`, vendored from `site_yacloud_openrouter`;
+its spec lives there as `/spec/auto_pull.md`) plus the glue `sw_autopull_opts()` /
+`sw_autopull_run()`. The switch is the admin tab **Обновление кода**
+(`spec/admin.md`); it is meant for active development, off by default.
+
+While `autopull_enabled = 1`, every PHP entry point — `admin.php`, `settings.php`
+and `api/index.php`, called first thing, before any output — asks GitHub for the head
+of the ref `pull.php` tracks:
+
+- same commit → nothing happens and nothing is printed;
+- new commit → `pull.php` is requested over HTTP (`?plain=1`) and deploys it, then the
+  browser gets `302` back to the URL it asked for and sees the new code. API calls and
+  XHR are checked but never redirected — their answer is data.
+
+The static pages (`index.html`, `order.html`) never reach PHP, so they do not trigger a
+check; opening the admin or any `/api/*` call does.
+
+Credentials come from `pull-config.php` only: `repo`, `branch` / `pr_number`,
+`gh_token` (or `GITHUB_TOKEN` in ENV, which wins), and the `pull.php` gate —
+`password_hash` is turned into the `pull_auth` cookie `pull.php` issues itself
+(`<expires>|HMAC-SHA256('pull-auth|<expires>', key = password_hash)`), the older
+`secret` into `?token=`.
+
+Settings (`settings` table): `autopull_enabled` (`0`/`1`), `autopull_interval`
+(seconds between checks, `0` = every request), `autopull_url` (explicit `pull.php`
+URL; empty = derived from the web root under `DOCUMENT_ROOT`).
+
+State: `data/auto-pull.json` (`0600`) + `auto-pull.json.lock` — last check, head,
+deployed commit, error, cooldown. A failed check stands the automation down for 120
+seconds; `flock` keeps parallel requests from deploying at once. The deployed commit
+comes from `pull-state.json` when the installed `pull.php` writes one, otherwise from
+this file.
+
+Limits: one GitHub API call per request at `autopull_interval = 0` (5000/h with a
+token), and the deploy is a second HTTP request to the same host. When the host serves
+one PHP request at a time, `pull.php` cannot answer while this page is being served: the
+wait is dropped after 20 seconds of silence, the page renders the old code, and the
+deploy finishes in the background (`pull.php` sets `ignore_user_abort(true)`), so the
+next request is on the new code.
+
 ## install.php — first run
 
 Open once after deploying. Checks PHP ≥ 7.2, extensions

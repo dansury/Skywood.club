@@ -11,8 +11,14 @@ require_once __DIR__ . '/api/lib/db.php';
 require_once __DIR__ . '/api/lib/catalog.php';
 require_once __DIR__ . '/api/lib/store.php';
 require_once __DIR__ . '/api/lib/preorder.php';
+require_once __DIR__ . '/api/lib/autopull.php';
 
 session_start();
+
+// Автообновление кода: при включённой галочке каждое открытие админки тихо
+// проверяет head в GitHub и, если коммит новее выложенного, выкладывает его
+// через pull.php и возвращает браузер на ту же страницу (spec/backend.md).
+sw_autopull_run();
 
 $env = sw_load_env(sw_env_path());
 // Accept ADMIN_PASS, then the legacy lowercase `adminpass`, then a safe default.
@@ -111,6 +117,20 @@ if ($authed && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']))
         if ($flash === '') {
             $flash = 'Настройки предзаказа сохранены';
         }
+    } elseif ($_POST['action'] === 'save_autopull') {
+        // Автообновление кода. Галочка и оба параметра пишутся всегда — иначе
+        // «выключить» и «очистить адрес» не сработали бы.
+        sw_setting_set('autopull_enabled', isset($_POST['autopull_enabled']) ? '1' : '0');
+        sw_setting_set('autopull_interval', (string)max(0, (int)sw_admin_post('autopull_interval', '0')));
+        sw_setting_set('autopull_url', trim((string)sw_admin_post('autopull_url', '')));
+        $flash = 'Настройки автообновления сохранены';
+    } elseif ($_POST['action'] === 'autopull_check') {
+        // Разовая проверка — независимо от галочки.
+        $report = AutoPull::check(sw_autopull_opts(), true);
+        $flash = $report['ok']
+            ? 'Обновление: ' . $report['note'] . ($report['head'] !== '' ? ' (head ' . substr($report['head'], 0, 7) . ')' : '')
+            : 'Обновление: ' . $report['error'];
+        $flashType = $report['ok'] ? 'ok' : 'err';
     }
 }
 
@@ -214,6 +234,7 @@ $tab = $_GET['tab'] ?? 'stock';
     <a href="?tab=clients" class="<?= $tab === 'clients' ? 'active' : '' ?>">Клиенты</a>
     <a href="?tab=leads"   class="<?= $tab === 'leads' ? 'active' : '' ?>">Лиды / Re:plain</a>
     <a href="?tab=preorder" class="<?= $tab === 'preorder' ? 'active' : '' ?>">Узнать о поступлении</a>
+    <a href="?tab=deploy"  class="<?= $tab === 'deploy' ? 'active' : '' ?>">Обновление кода</a>
   </nav>
 
 <?php if ($tab === 'stock'):
@@ -447,6 +468,59 @@ $tab = $_GET['tab'] ?? 'stock';
       </tbody>
     </table>
   </div>
+
+<?php elseif ($tab === 'deploy'):
+    $apOpts   = sw_autopull_opts();
+    $apStatus = AutoPull::status($apOpts);
+    $apCfg    = AutoPull::pullConfig(AutoPull::root($apOpts)); ?>
+  <form class="card" method="post">
+    <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+    <input type="hidden" name="action" value="save_autopull">
+    <h2>Автообновление кода с GitHub</h2>
+    <p class="muted">На время активной разработки: пока галочка стоит, каждое обращение
+      к PHP (админка, настройки, вызовы <code>/api/*</code>) тихо спрашивает у GitHub
+      head отслеживаемой ссылки. Тот же коммит — не происходит ничего; новый —
+      <code>pull.php</code> выкладывает его, и страница открывается заново уже на новом
+      коде. Репозиторий, токен и пароль <code>pull.php</code> берутся из
+      <code>pull-config.php</code> в корне сайта — здесь их дублировать не нужно.
+      Статические страницы сайта до PHP не доходят и проверку не запускают.</p>
+    <p class="muted">
+      <?php if ($apCfg === null): ?>
+        <b>pull-config.php не найден — включать нечего.</b>
+      <?php else: ?>
+        Отслеживается: <b><?= h($apCfg['repo']) ?></b> ·
+        <?= $apCfg['source'] === 'pr' ? 'PR #' . (int)$apCfg['pr_number'] : 'ветка ' . h($apCfg['branch']) ?>.
+      <?php endif; ?>
+      <?php if ($apStatus['checked_at'] > 0): ?>
+        <br>Последняя проверка: <?= h(date('Y-m-d H:i:s', $apStatus['checked_at'])) ?><?= $apStatus['note'] !== '' ? ' — ' . h($apStatus['note']) : '' ?>.
+      <?php endif; ?>
+      <?php if ($apStatus['error'] !== ''): ?>
+        <br><b>Ошибка: <?= h(mb_substr($apStatus['error'], 0, 200)) ?></b>
+      <?php endif; ?>
+    </p>
+    <div class="grid">
+      <div><label>Проверять обновления</label>
+        <div class="row"><input type="checkbox" name="autopull_enabled"
+          <?= sw_setting('autopull_enabled', '0') === '1' ? 'checked' : '' ?>>
+          <span class="muted">при каждом запуске сервиса</span></div></div>
+      <div><label>Не чаще, сек</label>
+        <input type="number" min="0" step="1" name="autopull_interval"
+          value="<?= h(sw_setting('autopull_interval', '0')) ?>"></div>
+      <div><label>Адрес pull.php</label>
+        <input type="text" name="autopull_url" value="<?= h(sw_setting('autopull_url', '')) ?>"
+          placeholder="пусто — вычисляется сам"></div>
+    </div>
+    <div style="margin-top:12px"><button type="submit">Сохранить настройки</button></div>
+  </form>
+
+  <form class="card" method="post">
+    <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+    <input type="hidden" name="action" value="autopull_check">
+    <h2>Проверить обновление сейчас</h2>
+    <p class="muted">Спрашивает head у GitHub и, если коммит новее выложенного,
+      запускает <code>pull.php</code> — независимо от галочки выше.</p>
+    <div style="margin-top:12px"><button type="submit">Проверить и обновить</button></div>
+  </form>
 <?php endif; ?>
 
 </div>

@@ -1,5 +1,9 @@
 <?php
 require_once __DIR__ . '/api/lib/config.php';
+require_once __DIR__ . '/api/lib/autopull.php';
+
+// Автообновление кода — та же тихая проверка, что в админке (spec/backend.md).
+sw_autopull_run();
 
 $env = sw_load_env(sw_env_path());
 
